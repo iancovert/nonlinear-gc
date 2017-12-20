@@ -1,0 +1,5 @@
+.DS_Store
+*.pyc
+*.out
+*.data
+__pycache__/
