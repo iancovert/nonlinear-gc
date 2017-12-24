@@ -2,6 +2,7 @@
 
 jobfile=$1
 jobname=${jobfile%.*}
+jobname=${jobname%.*}
 njobs=$(wc -l ${jobfile} | cut -d" " -f1)
 
 mkdir -p out/${jobname}
@@ -23,8 +24,8 @@ then
         sbatch --array=1-${jnjobs} --job-name=${jfile} \
                --output=${outfile} \
                --error=${errfile} \
-               --partition=short --export=jobfile=${jfile} \
-               --time=11:59:00 \
+               --partition=medium --export=jobfile=${jfile} \
+               --time=3-23:59:00 \
                submit_job.sbatch
 		echo "Submitted a job file..."
         sleep 60
@@ -34,8 +35,8 @@ else
     sbatch --array=1-${njobs} --job-name=${jobname} \
            --output=${outfile} \
            --error=${errfile} \
-           --partition=short --export=jobfile=${jobfile} \
-           --time=11:59:00 \
+           --partition=medium --export=jobfile=${jobfile} \
+           --time=3-23:59:00 \
            submit_job.sbatch
 	echo "Submitted job file"
 fi

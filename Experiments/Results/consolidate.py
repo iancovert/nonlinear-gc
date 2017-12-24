@@ -11,7 +11,7 @@ parser.add_argument('--dir', type=str, default=None, help='directory containing 
 parser.add_argument('--outname', type=str, default=None,help='(optional) name for output file')
 args = parser.parse_args()
 
-resdir = args.resdir
+resdir = args.dir
 if resdir is None:
 	raise ValueError('must specify directory where results are located')
 
