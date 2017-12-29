@@ -96,14 +96,19 @@ for target in range(p_out):
 
 # Save results
 results_dict = {
-	'lam': lam,
 	'train_loss': train_loss,
 	'val_loss': val_loss,
 	'weights_list': weights_list,
 	'GC_est': GC_est,
 	'forecasts_train': forecasts_train,
 	'forecasts_val': forecasts_val,
-	'GC_true': GC
+	'GC_true': GC,
+	'lam': lam,
+	'nepoch': epochs,
+	'lr': lr,
+	'opt_type': opt_type,
+	'seed': seed,
+	'arch': [hidden_size, hidden_layers]
 }
 
 # Save results

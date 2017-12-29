@@ -22,7 +22,7 @@ if outname is None:
 		base = split_name[-2]
 	else:
 		base = split_name[-1]	
-	outname = ''.join([base, '.data'])
+	outname = ''.join([base.replace(' ', '_'), '.data'])
 
 res_files = glob.glob(os.path.join(resdir, '*.out'))
 res_files = [os.path.basename(f) for f in res_files]
