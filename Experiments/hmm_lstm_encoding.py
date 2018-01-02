@@ -23,6 +23,7 @@ parser.add_argument('--nepoch', type = int, default = 1000, help = 'number of tr
 parser.add_argument('--lr', type = float, default = 0.001, help = 'learning rate')
 parser.add_argument('--lam', type = float, default = 0.1, help = 'lambda for weight decay')
 parser.add_argument('--seed', type = int, default = 12345, help = 'seed')
+parser.add_argument('--arch', type = int, default = 1, help = 'architecture')
 args = parser.parse_args()
 
 nepoch = args.nepoch
@@ -30,12 +31,11 @@ lr = args.lr
 opt_type = 'prox'
 seed = args.seed
 lam = args.lam
+arch = args.arch
 
 window_size = 100
 stride_size = None
 truncation = 5
-
-arch = 2
 
 # Prepare filename
 experiment_base = 'HMM LSTM Encoding'
@@ -60,9 +60,6 @@ Y_train = X_train[1:, :]
 X_train = X_train[:-1, :]
 Y_val = X_val[1:, :]
 X_val = X_val[:-1, :]
-
-p_in = X_val.shape[1]
-p_out = Y_val.shape[1]
 
 p_in = X_val.shape[1]
 p_out = Y_val.shape[1]
