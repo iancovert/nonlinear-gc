@@ -51,8 +51,12 @@ def _prox_update(W, lam, lr):
 	'''
 		Apply prox operator to a matrix, where columns each have group lasso penalty
 	'''
+	if type(lr) is not float:
+		lr = np.array(lr)
+
 	norm_value = np.linalg.norm(W, axis = 0, ord = 2)
 	norm_value_gt = norm_value >= lam * lr
+	
 	W[:, np.logical_not(norm_value_gt)] = 0.0
-	W[:, norm_value_gt] = W[:, norm_value_gt] * (1 - lr * lam / norm_value[norm_value_gt][np.newaxis])
+	W[:, norm_value_gt] = W[:, norm_value_gt] * (1 - lam * np.divide(lr[norm_value_gt], norm_value[norm_value_gt][np.newaxis]))
 	return W

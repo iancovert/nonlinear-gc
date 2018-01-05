@@ -15,7 +15,7 @@ from Data.data_processing import split_data
 # Model modules
 sys.path.append('../Model')
 from lstm import ParallelLSTMEncoding
-from experiment import run_recurrent_experiment_cv
+from experiment_cv import run_recurrent_experiment
 
 # Parse command line arguments
 parser = argparse.ArgumentParser()

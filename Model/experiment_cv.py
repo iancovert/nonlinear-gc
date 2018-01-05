@@ -30,6 +30,10 @@ def run_experiment(model, X_train, Y_train, X_val, Y_val, nepoch, mbsize = None,
 		val_accuracy = np.zeros((nchecks, d_out))
 	counter = 0
 
+	# Store best results
+	best_properties = [None] * d_out
+	best_val_loss = [np.inf] * d_out
+
 	# Begin training
 	for epoch in range(nepoch):
 
@@ -50,6 +54,7 @@ def run_experiment(model, X_train, Y_train, X_val, Y_val, nepoch, mbsize = None,
 			# Save results
 			train_loss[counter, :] = model.calculate_loss(X_train, Y_train)
 			val_loss[counter, :] = model.calculate_loss(X_val, Y_val)
+			
 			if model.task == 'classification':
 				train_accuracy[counter, :] = model.calculate_accuracy(X_train, Y_train)
 				val_accuracy[counter, :] = model.calculate_accuracy(X_val, Y_val)
@@ -62,23 +67,43 @@ def run_experiment(model, X_train, Y_train, X_val, Y_val, nepoch, mbsize = None,
 				print('val loss = %e' % val_loss[counter, 0])
 				print('----------')
 
-			counter += 1
+			# Check if this is best result so far
+			modified = [False] * d_out
+			for p in range(d_out):
+				if val_loss[counter, p] < best_val_loss[p]:
+					modified[p] = True
 
-	weights = model.get_weights()
+					best_val_loss[p] = val_loss[counter, p]
+					best_properties[p] = {
+						'val_loss': val_loss[counter, p],
+						'nepoch': epoch,
+						'weights': model.get_weights(p = p)
+					}
+				elif val_loss[counter, p] > val_loss[counter - 1, p]:
+					model.cooldown(p)
+
+			# Add accuracies, if necessary
+			if model.task == 'classification':
+				for p in range(d_out):
+					if modified[p]:
+						best_properties[p]['val_accuracy'] = val_accuracy[counter, p]
+
+			# Add predictions, if necessary
+			if predictions and sum(modified) > 0:
+				predictions_train = model.predict(X_train)
+				predictions_val = model.predict(X_val)
+
+				for p in range(d_out):
+					if modified[p]:
+						best_properties[p]['predictions_train'] = predictions_train[:, p]
+						best_properties[p]['predictions_val'] = predictions_val[:, p]
+
+			counter += 1
 
 	if verbose:
 		print('Done training')
 
-	if predictions:
-		if model.task == 'classification':
-			return train_loss, val_loss, train_accuracy, val_accuracy, weights, model.predict(X_train), model.predict(X_val)
-		else:
-			return train_loss, val_loss, weights, model.predict(X_train), model.predict(X_val)
-	else:
-		if model.task == 'classification':
-			return train_loss, val_loss, train_accuracy, val_accuracy, weights
-		else:
-			return train_loss, val_loss, weights
+	return train_loss, val_loss, best_properties
 
 def run_recurrent_experiment(model, X_train, Y_train, X_val, Y_val, nepoch, window_size = None, stride_size = None, truncation = None, verbose = True, loss_check = 100, predictions = False):
 	# Window parameters
@@ -99,6 +124,10 @@ def run_recurrent_experiment(model, X_train, Y_train, X_val, Y_val, nepoch, wind
 	train_loss = np.zeros((nchecks, d_out))
 	val_loss = np.zeros((nchecks, d_out))
 	counter = 0
+
+	# Store best results
+	best_properties = [None] * d_out
+	best_val_loss = [np.inf] * d_out
 
 	# Begin training
 	for epoch in range(nepoch):
@@ -138,14 +167,34 @@ def run_recurrent_experiment(model, X_train, Y_train, X_val, Y_val, nepoch, wind
 				print('val loss = %e' % val_loss[counter, 0])
 				print('----------')
 
-			counter += 1
+			# Check if this is best result so far
+			modified = [False] * d_out	
+			for p in range(d_out):
+				if val_loss[counter, p] < best_val_loss[p]:
+					modified[p] = True
 
-	weights = model.get_weights()
+					best_val_loss[p] = val_loss[counter, p]
+					best_properties[p] = {
+						'val_loss': val_loss[counter, p],
+						'nepoch': epoch,
+						'weights': model.get_weights(p = p)
+					}
+				elif val_loss[counter, p] > val_loss[counter - 1, p]:
+					model.cooldown(p)
+
+			# Add predictions, if necessary
+			if predictions and sum(modified) > 0:
+				train_forecasts = model.predict(X_train)
+				val_forecasts = model.predict(X_val)
+					
+				for p in range(d_out):
+					if modified[p]:
+						best_properties[p]['predictions_train'] = train_forecasts[:, p]
+						best_properties[p]['predictions_val'] = val_forecasts[:, p]
+
+			counter += 1
 
 	if verbose:
 		print('Done training')
 
-	if predictions:
-		return train_loss, val_loss, weights, model.predict(X_train), model.predict(X_val)
-	else:
-		return train_loss, val_loss, weights
+	return train_loss, val_loss, best_properties

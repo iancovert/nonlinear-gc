@@ -9,7 +9,7 @@ from itertools import chain
 from regularize import *
 
 class ParallelMLPEncoding:
-	def __init__(self, input_series, output_series, lag, hidden_units, lr, opt, lam, penalty, nonlinearity = 'relu'):
+	def __init__(self, input_series, output_series, lag, hidden_units, lr, opt, lam, penalty, nonlinearity = 'relu', lr_decay = 0.5):
 		# Set up networks for each output series
 		self.sequentials = []
 		self.p = output_series
@@ -31,32 +31,41 @@ class ParallelMLPEncoding:
 
 			self.sequentials.append(net)
 
-		# Set up optimizer
+		# Prepare to set up optimizer
 		self.task = 'regression'
 		self.loss_fn = nn.MSELoss()
-		self.lr = lr
+		self.lr = [lr] * output_series
+		self.lr_decay = lr_decay
 		self.lam = lam
 		self.penalty = penalty
 
-		param_list = []
-		for net in self.sequentials:
-			param_list = param_list + list(net.parameters())
-		
+		# Set up optimizer
+		self.opt = opt
+
 		if opt == 'prox':
-			self.optimizer = optim.SGD(param_list, lr = lr, momentum = 0.9)
+			self.optimizers = [optim.SGD(list(net.parameters()), lr = lr, momentum = 0.9) for net in self.sequentials]
 			self.train = self._train_prox
 
 		else:
 			if opt == 'adam':
-				self.optimizer = optim.Adam(param_list, lr = lr)
+				self.optimizers = [optim.Adam(list(net.parameters()), lr = lr) for net in self.sequentials]
 			elif opt == 'sgd':
-				self.optimizer = optim.SGD(param_list, lr = lr)
+				self.optimizers = [optim.SGD(list(net.parameters()), lr = lr) for net in self.sequentials]
 			elif opt == 'momentum':
-				self.optimizer = optim.SGD(param_list, lr = lr, momentum = 0.9)
+				self.optimizers = [optim.SGD(list(net.parameters()), lr = lr, momentum = 0.9) for net in self.sequentials]
 			else:
 				raise ValueError('opt must be a valid option')
 
 			self.train = self._train_builtin
+
+	def cooldown(self, p):
+		self.lr[p] *= self.lr_decay
+		if self.opt == 'prox' or self.opt == 'momentum':
+			self.optimizers[p] = optim.SGD(list(self.sequentials[p].parameters()), lr = self.lr[p], momentum = 0.9)
+		elif self.opt == 'adam':
+			self.optimizers[p] = optim.Adam(list(self.sequentials[p].parameters()), lr = self.lr[p])
+		else:
+			self.optimizers[p] = optim.SGD(list(self.sequentials[p].parameters()), lr = self.lr[p])
 
 	def _train_prox(self, X, Y):
 		# Compute total loss
@@ -67,7 +76,7 @@ class ParallelMLPEncoding:
 		[net.zero_grad() for net in self.sequentials]
 
 		total_loss.backward()
-		self.optimizer.step()
+		[optimizer.step() for optimizer in self.optimizers]
 
 		# Apply prox operator
 		[prox_operator(list(net.parameters())[0], self.penalty, self.n, self.lr, self.lam, lag = self.lag) for net in self.sequentials]
@@ -82,7 +91,7 @@ class ParallelMLPEncoding:
 		[net.zero_grad() for net in self.sequentials]
 
 		total_loss.backward()
-		self.optimizer.step()
+		[optimizer.step() for optimizer in self.optimizers]
 
 	def _forward(self, X):
 		X_var = Variable(torch.from_numpy(X).float())

@@ -9,7 +9,7 @@ from itertools import chain
 from regularize import *
 
 class ParallelLSTMEncoding:
-	def __init__(self, input_series, output_series, hidden_size, hidden_layers, lr, opt, lam):
+	def __init__(self, input_series, output_series, hidden_size, hidden_layers, lr, opt, lam, lr_decay = 0.5):
 		# Set up networks
 		self.lstms = [nn.LSTM(input_series, hidden_size, hidden_layers) for _ in range(output_series)]
 		self.out_layers = [nn.Linear(hidden_size, 1) for _ in range(output_series)]
@@ -20,30 +20,40 @@ class ParallelLSTMEncoding:
 		self.hidden_size = hidden_size
 		self.hidden_layers = hidden_layers
 
-		# Set up optimizer
+		# Prepare to set up optimizer
 		self.task = 'regression'
 		self.loss_fn = nn.MSELoss()
 		self.lam = lam
-		self.lr = lr
+		self.lr = [lr] * output_series
+		self.lr_decay = lr_decay
 
-		param_list = []
-		for net in chain(self.lstms, self.out_layers):
-			param_list = param_list + list(net.parameters())
+		# Set up optimizer
+		self.opt = opt
 
 		if opt == 'prox':
-			self.optimizer = optim.SGD(param_list, lr = lr, momentum = 0.9)
+			self.optimizers = [optim.SGD(list(lstm.parameters()) + list(out.parameters()), lr = lr, momentum = 0.9) for lstm, out in zip(self.lstms, self.out_layers)]
 			self.train = self._train_prox
+
 		else:
 			if opt == 'adam':
-				self.optimizer = optim.Adam(param_list, lr = lr)
+				self.optimizers = [optim.Adam(list(lstm.parameters()) + list(out.parameters()), lr = lr) for lstm, out in zip(self.lstms, self.out_layers)]
 			elif opt == 'sgd':
-				self.optimizer = optim.SGD(param_list, lr = lr)
+				self.optimizers = [optim.SGD(list(lstm.parameters()) + list(out.parameters()), lr = lr) for lstm, out in zip(self.lstms, self.out_layers)]
 			elif opt == 'momentum':
-				self.optimizer = optim.SGD(param_list, lr = lr, momentum = 0.9)
+				self.optimizers = [optim.SGD(list(lstm.parameters()) + list(out.parameters()), lr = lr, momentum = 0.9) for lstm, out in zip(self.lstms, self.out_layers)]
 			else:
 				raise ValueError('opt must be a valid option')
 
 			self.train = self._train_builtin
+
+	def cooldown(self, p):
+		self.lr[p] *= self.lr_decay
+		if self.opt == 'prox' or self.opt == 'momentum':
+			self.optimizers[p] = optim.SGD(list(self.lstms[p].parameters()) + list(self.out_layers[p].parameters()), lr = self.lr[p], momentum = 0.9)
+		elif self.opt == 'adam':
+			self.optimizers[p] = optim.Adam(list(self.lstms[p].parameters()) + list(self.out_layers[p].parameters()), lr = self.lr[p])
+		else:
+			self.optimizers[p] = optim.SGD(list(self.lstms[p].parameters()) + list(self.out_layers[p].parameters()), lr = self.lr[p])
 
 	def _init_hidden(self):
 		return tuple(
@@ -116,7 +126,7 @@ class ParallelLSTMEncoding:
 		[net.zero_grad() for net in chain(self.lstms, self.out_layers)]
 
 		total_loss.backward()
-		self.optimizer.step()
+		[optimizer.step() for optimizer in self.optimizers]
 
 		# Apply proximal operator
 		[prox_operator(lstm.weight_ih_l0, 'group_lasso', self.input_series, self.lr, self.lam) for lstm in self.lstms]
@@ -133,7 +143,7 @@ class ParallelLSTMEncoding:
 		[net.zero_grad() for net in chain(self.lstms, self.out_layers)]
 
 		total_loss.backward()
-		self.optimizer.step()
+		[optimizer.step() for optimizer in self.optimizers]
 
 		if return_hidden:
 			return hidden

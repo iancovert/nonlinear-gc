@@ -15,7 +15,7 @@ from Data.data_processing import format_ts_data
 # Model modules
 sys.path.append('../Model')
 from mlp import ParallelMLPEncoding
-from experiment import run_experiment_cv
+from experiment_cv import run_experiment
 
 # Parse command line arguments
 parser = argparse.ArgumentParser()
