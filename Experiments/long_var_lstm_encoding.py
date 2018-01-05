@@ -70,7 +70,7 @@ if args.seed != 0:
 model = ParallelLSTMEncoding(p_in, p_out, args.hidden, 1, args.lr, 'prox', args.lam)
 
 # Run experiment
-train_loss, val_loss, best_properties = run_recurrent_experiment_cv(model, X_train, Y_train, X_val, Y_val, 
+train_loss, val_loss, best_properties = run_recurrent_experiment(model, X_train, Y_train, X_val, Y_val, 
 	args.nepoch, window_size = window_size, stride_size = stride_size, truncation = truncation, predictions = True, loss_check = 1)
 
 # Format results

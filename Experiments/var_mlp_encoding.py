@@ -63,7 +63,7 @@ if args.seed != 0:
 model = ParallelMLPEncoding(p_in, p_out, args.network_lag, [args.hidden], args.lr, 'prox', args.lam, 'group_lasso')
 
 # Run experiment
-train_loss, val_loss, best_properties = run_experiment_cv(model, X_train, Y_train, X_val, Y_val, args.nepoch, predictions = True, loss_check = 10)
+train_loss, val_loss, best_properties = run_experiment(model, X_train, Y_train, X_val, Y_val, args.nepoch, predictions = True, loss_check = 10)
 
 # Format results
 experiment_params = {
