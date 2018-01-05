@@ -146,8 +146,11 @@ class ParallelLSTMEncoding:
 		Y_pred = self._forward(X)
 		return np.array([Y[:, 0].data.numpy() for Y in Y_pred]).T
 
-	def get_weights(self):
-		return [lstm.weight_ih_l0.data.numpy() for lstm in self.lstms]
+	def get_weights(self, p = None):
+		if p is None:
+			return [lstm.weight_ih_l0.data.numpy() for lstm in self.lstms]
+		else:
+			return self.lstms[p].weight_ih_l0.data.numpy()
 
 class ParallelLSTMDecoding:
 	def __init__(self, input_series, output_series, hidden_size, hidden_layers, fc_units, lr, opt, lam, nonlinearity = 'relu'):

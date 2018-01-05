@@ -97,8 +97,11 @@ class ParallelMLPEncoding:
 		loss = self._loss(X, Y)
 		return np.array([num.data[0] for num in loss])
 
-	def get_weights(self):
-		return [list(net.parameters())[0].data.numpy() for net in self.sequentials]
+	def get_weights(self, p = None):
+		if p is None:
+			return [list(net.parameters())[0].data.numpy() for net in self.sequentials]
+		else:
+			return list(self.sequentials[p].parameters())[0].data.numpy()
 
 	def predict(self, X):
 		Y_pred = self._forward(X)
