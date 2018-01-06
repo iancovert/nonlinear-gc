@@ -40,5 +40,5 @@ with open(jobfile, 'w') as f:
 		argstr += ' --T=%d' % T
 		argstr += ' --lag=%d' % lag
 
-		#f.write(argstr + '\n')
-		print(argstr)
+		f.write(argstr + '\n')
+		
