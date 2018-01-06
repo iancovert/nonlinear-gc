@@ -9,13 +9,13 @@ import shutil
 import sys
 
 # Data modules
-from Data.generate_synthetic import lorentz_96_model
-from Data.data_processing import split_data
+from Data.generate_synthetic import hmm_model
+from Data.data_processing import format_ts_data
 
 # Model modules
 sys.path.append('../Model')
-from lstm import ParallelLSTMEncoding
-from experiment_cv import run_recurrent_experiment
+from mlp import ParallelMLPEncoding
+from experiment_cv import run_experiment
 
 # Parse command line arguments
 parser = argparse.ArgumentParser()
@@ -24,23 +24,22 @@ parser.add_argument('--lr', type = float, default = 0.001, help = 'learning rate
 parser.add_argument('--lam', type = float, default = 0.1, help = 'lambda for weight decay')
 parser.add_argument('--seed', type = int, default = 12345, help = 'seed')
 parser.add_argument('--hidden', type = int, default = 10, help = 'hidden units')
+parser.add_argument('--network_lag', type = int, default = 5, help = 'lag considered by MLP')
 
+parser.add_argument('--sparsity', type = float, default = 0.2, help = 'sparsity of time series')
 parser.add_argument('--p', type = int, default = 10, help = 'dimensionality of time series')
 parser.add_argument('--T', type = int, default = 1000, help = 'length of time series')
+parser.add_argument('--states', type = int, default = 5, help = 'number of states in HMM')
 
 args = parser.parse_args()
 
-window_size = 100
-stride_size = 10
-truncation = None
-
 # Prepare filename
-experiment_base = 'Lorentz LSTM Encoding'
+experiment_base = 'HMM MLP Encoding'
 results_dir = 'Results/' + experiment_base
 
 experiment_name = results_dir + '/expt'
-experiment_name += '_nepoch=%d_lr=%e_lam=%e_seed=%d_hidden=%d' % (args.nepoch, args.lr, args.lam, args.seed, args.hidden)
-experiment_name += '_p=%d_T=%d.out' % (args.p, args.T)
+experiment_name += '_nepoch=%d_lr=%e_lam=%e_seed=%d_hidden=%d_networklag=%d' % (args.nepoch, args.lr, args.lam, args.seed, args.hidden, args.network_lag)
+experiment_name += '_spars=%e_p=%d_T=%d_states=%d.out' % (args.sparsity, args.p, args.T, args.states)
 
 # Create directory, if necessary
 if not os.path.exists(results_dir):
@@ -52,12 +51,8 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # Prepare data
-X, GC = lorentz_96_model(8, args.p, args.T)
-X_train, X_val = split_data(X, validation = 0.1)
-Y_train = X_train[1:, :]
-X_train = X_train[:-1, :]
-Y_val = X_val[1:, :]
-X_val = X_val[:-1, :]
+X, _, GC = hmm_model(args.p, args.T, num_states = args.states, sparsity = args.sparsity)
+X_train, Y_train, X_val, Y_val = format_ts_data(X, args.network_lag)
 
 p_in = Y_val.shape[1]
 p_out = Y_val.shape[1]
@@ -65,11 +60,10 @@ p_out = Y_val.shape[1]
 # Get model
 if args.seed != 0:
 	torch.manual_seed(args.seed)
-model = ParallelLSTMEncoding(p_in, p_out, args.hidden, 1, args.lr, 'prox', args.lam)
+model = ParallelMLPEncoding(p_in, p_out, args.network_lag, [args.hidden], args.lr, 'prox', args.lam, 'group_lasso')
 
 # Run experiment
-train_loss, val_loss, best_properties = run_recurrent_experiment(model, X_train, Y_train, X_val, Y_val, 
-	args.nepoch, window_size = window_size, stride_size = stride_size, truncation = truncation, predictions = True, loss_check = 10)
+train_loss, val_loss, best_properties = run_experiment(model, X_train, Y_train, X_val, Y_val, args.nepoch, predictions = True, loss_check = 10)
 
 # Format results
 experiment_params = {
@@ -77,12 +71,15 @@ experiment_params = {
 	'lam': args.lam,
 	'lr': args.lr,
 	'seed': args.seed,
-	'hidden': args.hidden
+	'hidden': args.hidden,
+	'network_lag': args.network_lag
 }
 
 data_params = {
+	'sparsity': args.sparsity,
 	'p': args.p,
 	'T': args.T,
+	'states': args.states,
 	'GC_true': GC
 }
 
