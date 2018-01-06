@@ -8,7 +8,7 @@ tstamp = time.strftime('%H%M%S')
 jobname = 'var_mlp_encoding_%s_%s' % (dstamp, tstamp)
 jobfile = 'Batches/%s.job' % jobname
 
-nepoch_grid = [5000]
+nepoch_grid = [20000]
 lr_grid = [0.01]
 lam_grid = np.append(np.geomspace(3.0, 0.001, num = 50), 0)
 seed_grid = [0]

@@ -71,7 +71,7 @@ model = ParallelLSTMEncoding(p_in, p_out, args.hidden, 1, args.lr, 'prox', args.
 
 # Run experiment
 train_loss, val_loss, best_properties = run_recurrent_experiment(model, X_train, Y_train, X_val, Y_val, 
-	args.nepoch, window_size = window_size, stride_size = stride_size, truncation = truncation, predictions = True, loss_check = 1)
+	args.nepoch, window_size = window_size, stride_size = stride_size, truncation = truncation, predictions = True, loss_check = 10)
 
 # Format results
 experiment_params = {
