@@ -33,10 +33,10 @@ if len(res_files) < 1:
 all_par_dict_list = []
 for rf in res_files:
 	with open(os.path.join(resdir, rf), 'rb') as f:
-		res = pickle.load(f)
+		results = pickle.load(f)
 	consolidated = {**results['best_results'], **results['experiment_params'], **results['data_params']}
-	if 'model' in experiment_params.keys():
-		del experiment_params['model']
+	if 'model' in consolidated.keys():
+		del consolidated['model']
 	all_par_dict_list.append(consolidated)
 
 experiment_df = pd.DataFrame(all_par_dict_list)
