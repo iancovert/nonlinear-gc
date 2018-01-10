@@ -10,7 +10,7 @@ import sys
 
 # Data modules
 from Data.generate_synthetic import lorentz_96_model
-from Data.data_processing import split_data
+from Data.data_processing import split_data, normalize
 
 # Model modules
 sys.path.append('../Model')
@@ -53,6 +53,7 @@ if os.path.isfile(experiment_name):
 
 # Prepare data
 X, GC = lorentz_96_model(8, args.p, args.T)
+X = normalize(X)
 X_train, X_val = split_data(X, validation = 0.1)
 Y_train = X_train[1:, :]
 X_train = X_train[:-1, :]
