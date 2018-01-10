@@ -10,7 +10,7 @@ import sys
 
 # Data modules
 from Data.generate_synthetic import var_model
-from Data.data_processing import format_ts_data
+from Data.data_processing import format_ts_data, normalize
 
 # Model modules
 sys.path.append('../Model')
@@ -52,6 +52,7 @@ if os.path.isfile(experiment_name):
 
 # Prepare data
 X, _, GC = var_model(args.sparsity, args.p, 1, 1, args.T, args.lag)
+X = normalize(X)
 X_train, Y_train, X_val, Y_val = format_ts_data(X, args.network_lag)
 
 p_in = Y_val.shape[1]
