@@ -28,11 +28,12 @@ parser.add_argument('--hidden', type = int, default = 10, help = 'hidden units')
 parser.add_argument('--p', type = int, default = 10, help = 'dimensionality of time series')
 parser.add_argument('--T', type = int, default = 1000, help = 'length of time series')
 
-args = parser.parse_args()
+parser.add_argument('--window', type = int, default = 20, help = 'size of sliding windows for splitting training data')
+parser.add_argument('--stride', type = int, default = 10, help = 'size of stride of sliding windows for splitting training data')
+parser.add_argument('--truncation', type = int, default = None, help = 'length of gradient truncation')
+parser.add_argument('--loss_check', type = int, default = 10, help = 'interval for checking loss')
 
-window_size = 100
-stride_size = 10
-truncation = None
+args = parser.parse_args()
 
 # Prepare filename
 experiment_base = 'Lorentz LSTM Encoding'
@@ -70,7 +71,7 @@ model = ParallelLSTMEncoding(p_in, p_out, args.hidden, 1, args.lr, 'prox', args.
 
 # Run experiment
 train_loss, val_loss, best_properties = run_recurrent_experiment(model, X_train, Y_train, X_val, Y_val, 
-	args.nepoch, window_size = window_size, stride_size = stride_size, truncation = truncation, predictions = True, loss_check = 10)
+	args.nepoch, window_size = args.window, stride_size = args.stride, truncation = args.truncation, predictions = True, loss_check = args.loss_check)
 
 # Format results
 experiment_params = {
@@ -92,7 +93,7 @@ best_results = {
 	'best_val_loss': [props['val_loss'] for props in best_properties],
 	'predictions_train': np.concatenate([props['predictions_train'][:, np.newaxis] for props in best_properties], axis = 1),
 	'predictions_val': np.concatenate([props['predictions_val'][:, np.newaxis] for props in best_properties], axis = 1),
-	'GC_est': [np.linalg.norm(props['weights'], axis = 1) for props in best_properties]
+	'GC_est': [np.linalg.norm(props['weights'], axis = 0) for props in best_properties]
 }
 
 results_dict = {

@@ -1,6 +1,6 @@
 import numpy as np
 
-def run_experiment(model, X_train, Y_train, X_val, Y_val, nepoch, mbsize = None, verbose = True, loss_check = 100, predictions = False):
+def run_experiment(model, X_train, Y_train, X_val, Y_val, nepoch, mbsize = None, verbose = True, loss_check = 100, predictions = False, min_lr = 1e-8):
 	# Batch parameters
 	minibatches = not mbsize is None
 	if minibatches:
@@ -100,12 +100,16 @@ def run_experiment(model, X_train, Y_train, X_val, Y_val, nepoch, mbsize = None,
 
 			counter += 1
 
+			# Check if all learning rates are low enough to stop
+			if p - sum(modified) > 0 and sum([lr > min_lr for lr in model.lr]) == 0:
+				break
+
 	if verbose:
 		print('Done training')
 
-	return train_loss, val_loss, best_properties
+	return train_loss[:counter, :], val_loss[:counter, :], best_properties
 
-def run_recurrent_experiment(model, X_train, Y_train, X_val, Y_val, nepoch, window_size = None, stride_size = None, truncation = None, verbose = True, loss_check = 100, predictions = False):
+def run_recurrent_experiment(model, X_train, Y_train, X_val, Y_val, nepoch, window_size = None, stride_size = None, truncation = None, verbose = True, loss_check = 100, predictions = False, min_lr = 1e-8):
 	# Window parameters
 	T = X_train.shape[0]
 	if window_size is not None:
@@ -194,7 +198,11 @@ def run_recurrent_experiment(model, X_train, Y_train, X_val, Y_val, nepoch, wind
 
 			counter += 1
 
+			# Check if all learning rates are low enough to stop
+			if p - sum(modified) > 0 and sum([lr > min_lr for lr in model.lr]) == 0:
+				break
+
 	if verbose:
 		print('Done training')
 
-	return train_loss, val_loss, best_properties
+	return train_loss[:counter, :], val_loss[:counter, :], best_properties
