@@ -32,7 +32,7 @@ parser.add_argument('--T', type = int, default = 1000, help = 'length of time se
 args = parser.parse_args()
 
 # Prepare filename
-experiment_base = 'VAR MLP Encoding'
+experiment_base = 'Lorentz MLP Encoding'
 results_dir = 'Results/' + experiment_base
 
 experiment_name = results_dir + '/expt'
