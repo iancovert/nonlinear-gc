@@ -29,6 +29,8 @@ parser.add_argument('--network_lag', type = int, default = 5, help = 'lag consid
 parser.add_argument('--p', type = int, default = 10, help = 'dimensionality of time series')
 parser.add_argument('--T', type = int, default = 1000, help = 'length of time series')
 
+parser.add_argument('--loss_check', type = int, default = 10, help = 'interval for checking loss')
+
 args = parser.parse_args()
 
 # Prepare filename
@@ -62,7 +64,7 @@ if args.seed != 0:
 model = ParallelMLPEncoding(p_in, p_out, args.network_lag, [args.hidden], args.lr, 'prox', args.lam, 'group_lasso')
 
 # Run experiment
-train_loss, val_loss, best_properties = run_experiment(model, X_train, Y_train, X_val, Y_val, args.nepoch, predictions = True, loss_check = 10)
+train_loss, val_loss, best_properties = run_experiment(model, X_train, Y_train, X_val, Y_val, args.nepoch, predictions = True, loss_check = args.loss_check)
 
 # Format results
 experiment_params = {
@@ -85,7 +87,7 @@ best_results = {
 	'best_val_loss': [props['val_loss'] for props in best_properties],
 	'predictions_train': np.concatenate([props['predictions_train'][:, np.newaxis] for props in best_properties], axis = 1),
 	'predictions_val': np.concatenate([props['predictions_val'][:, np.newaxis] for props in best_properties], axis = 1),
-	'GC_est': [np.linalg.norm(props['weights'], axis = 1) for props in best_properties]
+	'GC_est': [np.linalg.norm(np.reshape(props['weights'], newshape = (args.hidden * args.network_lag, args.p), order = 'F'), axis = 0) for props in best_properties]
 }
 
 results_dict = {
