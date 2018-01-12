@@ -61,7 +61,7 @@ param_grid = product(lam_grid, seed_grid, hidden_grid, network_lag_grid,
 	nepoch_grid, lr_grid, cooldown_grid,
 	sparsity_grid, p_grid, T_grid, lag_grid)
 
-with open(jobfile, 'w') as f:
+with open(jobfile, 'a') as f:
 	for param in param_grid:
 		lam, seed, hidden, network_lag, nepoch, lr, cooldown, sparsity, p, T, lag = param
 
