@@ -1,0 +1,20 @@
+path	parent	name	synapseStore	contentType	used	executed	activityName	activityDescription
+/Users/alextank/Documents/training data/InSilicoSize100.zip	syn2853597	InSilicoSize100.zip	True	application/x-zip				
+/Users/alextank/Documents/training data/InSilicoSize50.zip	syn2853597	InSilicoSize50.zip	True	application/x-zip				
+/Users/alextank/Documents/training data/InSilicoSize10.zip	syn2853597	InSilicoSize10.zip	True	application/x-zip				
+/Users/alextank/Documents/training data/DREAM3_InSilicoChallenge_Description.doc	syn2853597	DREAM3_InSilicoChallenge_Description.doc	True	application/x-zip				
+/Users/alextank/Documents/gold standard/DREAM3GoldStandard_InSilicoSize100_Yeast3.txt	syn2853605	DREAM3GoldStandard_InSilicoSize100_Yeast3.txt	True	application/x-zip				
+/Users/alextank/Documents/gold standard/DREAM3GoldStandard_InSilicoSize100_Yeast2.txt	syn2853605	DREAM3GoldStandard_InSilicoSize100_Yeast2.txt	True	application/x-zip				
+/Users/alextank/Documents/gold standard/DREAM3GoldStandard_InSilicoSize100_Yeast1.txt	syn2853605	DREAM3GoldStandard_InSilicoSize100_Yeast1.txt	True	application/x-zip				
+/Users/alextank/Documents/gold standard/DREAM3GoldStandard_InSilicoSize100_Ecoli2.txt	syn2853605	DREAM3GoldStandard_InSilicoSize100_Ecoli2.txt	True	application/x-zip				
+/Users/alextank/Documents/gold standard/DREAM3GoldStandard_InSilicoSize100_Ecoli1.txt	syn2853605	DREAM3GoldStandard_InSilicoSize100_Ecoli1.txt	True	application/x-zip				
+/Users/alextank/Documents/gold standard/DREAM3GoldStandard_InSilicoSize50_Yeast3.txt	syn2853605	DREAM3GoldStandard_InSilicoSize50_Yeast3.txt	True	application/x-zip				
+/Users/alextank/Documents/gold standard/DREAM3GoldStandard_InSilicoSize50_Yeast2.txt	syn2853605	DREAM3GoldStandard_InSilicoSize50_Yeast2.txt	True	application/x-zip				
+/Users/alextank/Documents/gold standard/DREAM3GoldStandard_InSilicoSize50_Yeast1.txt	syn2853605	DREAM3GoldStandard_InSilicoSize50_Yeast1.txt	True	application/x-zip				
+/Users/alextank/Documents/gold standard/DREAM3GoldStandard_InSilicoSize50_Ecoli2.txt	syn2853605	DREAM3GoldStandard_InSilicoSize50_Ecoli2.txt	True	application/x-zip				
+/Users/alextank/Documents/gold standard/DREAM3GoldStandard_InSilicoSize50_Ecoli1.txt	syn2853605	DREAM3GoldStandard_InSilicoSize50_Ecoli1.txt	True	application/x-zip				
+/Users/alextank/Documents/gold standard/DREAM3GoldStandard_InSilicoSize10_Yeast3.txt	syn2853605	DREAM3GoldStandard_InSilicoSize10_Yeast3.txt	True	application/x-zip				
+/Users/alextank/Documents/gold standard/DREAM3GoldStandard_InSilicoSize10_Yeast2.txt	syn2853605	DREAM3GoldStandard_InSilicoSize10_Yeast2.txt	True	application/x-zip				
+/Users/alextank/Documents/gold standard/DREAM3GoldStandard_InSilicoSize10_Yeast1.txt	syn2853605	DREAM3GoldStandard_InSilicoSize10_Yeast1.txt	True	application/x-zip				
+/Users/alextank/Documents/gold standard/DREAM3GoldStandard_InSilicoSize10_Ecoli2.txt	syn2853605	DREAM3GoldStandard_InSilicoSize10_Ecoli2.txt	True	application/x-zip				
+/Users/alextank/Documents/gold standard/DREAM3GoldStandard_InSilicoSize10_Ecoli1.txt	syn2853605	DREAM3GoldStandard_InSilicoSize10_Ecoli1.txt	True	application/x-zip				
