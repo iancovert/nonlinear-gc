@@ -11,8 +11,7 @@ def lorentz_96_model(forcing_constant, p, N, delta_t = 0.01, sd = 0.1, noise_add
 	z[0, :] = np.random.normal(loc = 0, scale = 0.01, size = p)
 	for t in range(1, N):
 		for i in range(p):
-			upone = (i + 1) % p
-			grad = (z[t - 1, upone] - z[t - 1, i - 2]) * z[t - 1, i - 1] - z[t - 1, i] + forcing_constant
+			grad = (z[t - 1, (i + 1) % p] - z[t - 1, i - 2]) * z[t - 1, i - 1] - z[t - 1, i] + forcing_constant
 			z[t, i] = delta_t * grad + z[t - 1, i]
 			if noise_add == 'step':
 				z[t, i] += np.random.normal(loc = 0, scale = sd, size = 1)
@@ -29,7 +28,7 @@ def lorentz_96_model(forcing_constant, p, N, delta_t = 0.01, sd = 0.1, noise_add
 
 	return z[range(burnin, N), :], GC_on
 
-def stationary_var(beta,p,lag,radius):
+def stationary_var(beta, p, lag, radius):
 	bottom = np.hstack((np.eye(p * (lag-1)), np.zeros((p * (lag - 1), p))))  
 	beta_tilde = np.vstack((beta,bottom))
 	eig = np.linalg.eigvals(beta_tilde)
@@ -68,6 +67,38 @@ def var_model(sparsity, p, sd_beta, sd_e, N, lag, seed = 543):
 		X[:, i] = np.dot(beta, X[:, range(i - lag, i)].flatten(order = 'F')) + errors[:, i]
 
 	return X.T, beta, GC_on
+
+def standardized_var_model(sparsity, p, beta_value, sd_e, N, lag, seed = 654):
+	np.random.seed(seed)
+
+	radius = 0.97
+	beta = np.eye(p) * beta_value
+	GC_on = np.eye(p)
+
+	# Set dependencies for each component
+	num_nonzero = int(p * sparsity) - 1
+	for i in range(p):
+		choice = np.random.choice(p - 1, size = num_nonzero, replace = False)
+		choice[choice >= i] += 1
+		beta[i, choice] = beta_value
+		GC_on[i, choice] = 1
+
+	# Create full beta matrix
+	beta_full = beta
+	for i in range(1, lag):
+		beta_full = np.hstack((beta_full, beta))
+
+	not_stationary = True
+	while not_stationary:
+		beta_full, not_stationary = stationary_var(beta_full, p, lag, radius)
+
+	errors = np.random.normal(loc = 0, scale = sd_e, size = (p, N))
+	X = np.zeros((p, N))
+	X[:, range(lag)] = errors[:, range(lag)]
+	for i in range(lag, N):
+		X[:, i] = np.dot(beta_full, X[:, range(i - lag, i)].flatten(order = 'F')) + errors[:, i]
+
+	return X.T, beta_full, GC_on
 
 def long_lag_var_model(sparsity, p, sd_beta, sd_e, N, lag = 20, seed = 543):
 	np.random.seed(seed)
@@ -130,3 +161,38 @@ def hmm_model(p, N, num_states = 3, sd_e = 0.1, sparsity = 0.2, tau = 2, seed = 
 			X[i,j] = sd_e * np.random.randn(1) + mu[j,L[i,j]]
 
 	return X, L, GC_on
+
+# def standardized_hmm_model(p, N, num_states = 3, sd_e = 0.1, sparsity = 0.2, tau = 2, seed = 543):
+# 	np.random.seed(seed)
+	
+# 	Z_sig = 0.3
+# 	Z = np.zeros((p, p, num_states, num_states))
+	
+# 	GC_on = np.random.binomial(1, sparsity, p * p).reshape(p,p)
+# 	for i in range(p):
+# 		GC_on[i,i] = 1
+	
+# 	mu = np.random.uniform(low = -5.0, high = 5.0, size = (p, num_states))
+# 	for i in range(p):
+# 		for j in range(p):
+# 			if GC_on[i,j]:
+# 				Z[i,j,:,:] = Z_sig * np.random.randn(num_states,num_states)
+
+#     # generate state sequence
+# 	L = np.zeros((N,p)).astype(int)
+# 	for t in range(1,N):
+# 		for i in range(p):
+# 			switch_prob = np.zeros(num_states)
+# 			for j in range(p):
+# 				switch_prob += Z[i,j,L[t-1,j],:]
+# 			switch_prob = switch_prob * tau
+# 			switch_prob = np.exp(switch_prob - logsumexp(switch_prob))
+# 			L[t,i] = np.nonzero(np.random.multinomial(1, switch_prob))[0][0]
+
+#     # generate outputs from state sequence
+# 	X = np.zeros((N,p))
+# 	for i in range(N):
+# 		for j in range(p):
+# 			X[i,j] = sd_e * np.random.randn(1) + mu[j,L[i,j]]
+
+# 	return X, L, GC_on

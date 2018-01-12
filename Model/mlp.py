@@ -82,15 +82,16 @@ class ParallelMLPEncoding:
 		[prox_operator(list(net.parameters())[0], self.penalty, self.n, self.lr, self.lam, lag = self.lag) for net in self.sequentials]
 
 	def _train_builtin(self, X, Y):
-		# Compute total loss
-		loss = self._loss(X, Y)
-		penalty = [apply_penalty(list(net.parameters())[0], self.penalty, self.n, lag = self.lag) for net in self.sequentials]
-		total_loss = sum(loss) + self.lam * sum(penalty)
+		# Compute objective
+		# loss = self._loss(X, Y)
+		# penalty = [apply_penalty(list(net.parameters())[0], self.penalty, self.n, lag = self.lag) for net in self.sequentials]
+		# total_loss = sum(loss) + self.lam * sum(penalty)
+		objective = self._objective(X, Y)
 
 		# Run optimizer
 		[net.zero_grad() for net in self.sequentials]
 
-		total_loss.backward()
+		sum(objective).backward()
 		[optimizer.step() for optimizer in self.optimizers]
 
 	def _forward(self, X):
@@ -102,9 +103,18 @@ class ParallelMLPEncoding:
 		Y_var = [Variable(torch.from_numpy(Y[:, target][:, np.newaxis]).float()) for target in range(self.p)]
 		return [self.loss_fn(Y_pred[target], Y_var[target]) for target in range(self.p)]
 
+	def _objective(self, X, Y):
+		loss = self._loss(X, Y)
+		penalty = [self.lam * apply_penalty(list(net.parameters())[0], self.penalty, self.n, lag = self.lag) for net in self.sequentials]
+		return [l + p for (l, p) in zip(loss, penalty)]
+
 	def calculate_loss(self, X, Y):
 		loss = self._loss(X, Y)
 		return np.array([num.data[0] for num in loss])
+
+	def calculate_objective(self, X, Y):
+		objective = self._objective(X, Y)
+		return np.array([num.data[0] for num in objective])
 
 	def get_weights(self, p = None):
 		if p is None:
@@ -201,14 +211,16 @@ class ParallelMLPDecoding:
 		[prox_operator(list(net.parameters())[0], self.penalty, self.n, self.lr, self.lam, lag = self.series_out_size) for net in self.out_nets]
 
 	def _train_builtin(self, X, Y):
-		loss = self._loss(X, Y)
-		penalty = [apply_penalty(list(net.parameters())[0], self.penalty, self.n, lag = self.series_out_size) for net in self.out_nets]
-		total_loss = sum(loss) + self.lam * sum(penalty)
+		# loss = self._loss(X, Y)
+		# penalty = [apply_penalty(list(net.parameters())[0], self.penalty, self.n, lag = self.series_out_size) for net in self.out_nets]
+		# total_loss = sum(loss) + self.lam * sum(penalty)
+		objective = self._objective(X, Y)
 
 		# Run optimizer
 		[net.zero_grad() for net in chain(self.series_nets, self.out_nets)]
 
-		total_loss.backward()
+		# total_loss.backward()
+		sum(objective).backward()
 		self.optimizer.step()
 
 	def _forward(self, X):
@@ -222,9 +234,18 @@ class ParallelMLPDecoding:
 		Y_var = [Variable(torch.from_numpy(Y[:, target][:, np.newaxis]).float()) for target in range(self.p)]
 		return [self.loss_fn(Y_pred[target], Y_var[target]) for target in range(self.p)]
 
+	def _objective(self, X, Y):
+		loss = self._loss(X, Y)
+		penalty = [self.lam * apply_penalty(list(net.parameters())[0], self.penalty, self.n, lag = self.series_out_size) for net in self.out_nets]
+		return [l + p for (l, p) in zip(loss, penalty)]
+
 	def calculate_loss(self, X, Y):
 		loss = self._loss(X, Y)
 		return [num.data[0] for num in loss]
+
+	def calculate_objective(self, X, Y):
+		objective = self._objective(X, Y)
+		return np.array([num.data[0] for num in objective])
 
 	def get_weights(self):
 		return [list(net.parameters())[0].data.numpy() for net in self.out_nets]
