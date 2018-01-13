@@ -1,6 +1,39 @@
 from __future__ import division
 import numpy as np
 from scipy.special import logsumexp
+from scipy.integrate import odeint
+
+def lorentz_96(y,t,force,b):
+	p = y.shape[0]
+	dydt = np.zeros(y.shape[0])
+	for i in range(p):
+		dydt[i] = (y[(i + 1) % p] - y[i - 2]) * y[i - 1] - y[i] + force
+	return dydt
+
+
+def lorentz_96_model_2(forcing_constant,p,N,delta_t = .1, sd=.1,noise_add='global',seed = 543):
+	burnin = 100
+	N += burnin
+	F = forcing_constant
+	b = 10
+	y0 = np.random.normal(loc = 0, scale = 0.01, size = p)
+	t = N*delta_t
+	t = np.linspace(0,N*delta_t,N)
+
+	z = odeint(lorentz_96, y0, t, args=(F,b))
+
+	if noise_add == 'global':
+		z += np.random.normal(loc = 0, scale = sd, size = (N, p))
+
+	GC_on = np.zeros((p, p))
+	for i in range(p):
+		GC_on[i, i] = 1
+		GC_on[i, (i - 1) % p] = 1
+		GC_on[i, (i - 2) % p] = 1
+		GC_on[i, (i + 1) % p] = 1
+
+	return z[range(burnin, N), :], GC_on
+
 
 def lorentz_96_model(forcing_constant, p, N, delta_t = 0.01, sd = 0.1, noise_add = 'global', seed = 543):
 	np.random.seed(seed)
@@ -196,3 +229,11 @@ def hmm_model(p, N, num_states = 3, sd_e = 0.1, sparsity = 0.2, tau = 2, seed = 
 # 			X[i,j] = sd_e * np.random.randn(1) + mu[j,L[i,j]]
 
 # 	return X, L, GC_on
+
+
+if __name__ == "__main__": 
+	import matplotlib.pyplot as plt
+	z,GC = lorentz_96_model_2(5,10,100,.1,.1)
+	plt.plot(z[:, 0], 'b', label='theta(t)')
+	plt.plot(z[:, 1], 'g', label='omega(t)')
+	plt.show()
