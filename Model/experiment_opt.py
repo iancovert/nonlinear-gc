@@ -105,7 +105,7 @@ def run_experiment(model, X_train, Y_train, nepoch, mbsize = None, verbose = Tru
 
 	return train_loss[:counter, :], train_objective[:counter, :], best_properties
 
-def run_recurrent_experiment(model, X_train, Y_train, nepoch, window_size = None, stride_size = None, truncation = None, verbose = True, loss_check = 100, predictions = False, min_lr = 1e-8):
+def run_recurrent_experiment(model, X_train, Y_train, nepoch, window_size = None, stride_size = None, truncation = None, verbose = True, loss_check = 100, predictions = False, min_lr = 1e-8, cooldown = False):
 	# Window parameters
 	T = X_train.shape[0]
 	if window_size is not None:
@@ -144,11 +144,10 @@ def run_recurrent_experiment(model, X_train, Y_train, nepoch, window_size = None
 				start = start + stride_size
 				end = start + window_size
 
-
-			if start < end:
-				x_batch = X_train[range(start, T), :]
-				y_batch = Y_train[range(start, T), :]
-				model.train(x_batch, y_batch, truncation = truncation)
+			# if start < T:
+			# 	x_batch = X_train[range(start, T), :]
+			# 	y_batch = Y_train[range(start, T), :]
+			# 	model.train(x_batch, y_batch, truncation = truncation)
 
 		else:
 			model.train(X_train, Y_train, truncation = truncation)

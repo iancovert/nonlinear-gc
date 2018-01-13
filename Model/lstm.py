@@ -63,15 +63,17 @@ class ParallelLSTMEncoding:
 		)
 
 	def _forward(self, X, hidden = None, return_hidden = False):
-		n, p = X.shape
-		X_var = Variable(torch.from_numpy(X).float())
 		if hidden is None:
 			hidden = self._init_hidden()
 		
-		lstm_return = [self.lstms[target](X_var.view(n, 1, p), hidden[target]) for target in range(self.output_series)]
-		lstm_return = list(zip(*lstm_return))
-		lstm_out, lstm_hidden = lstm_return
-		net_out = [self.out_layers[target](lstm_out[target].view(n, self.hidden_size)) for target in range(self.output_series)]
+		if len(X.shape) == 2:
+			n, p = X.shape
+			X_var = Variable(torch.from_numpy(X).float()).view(n, 1, p)
+
+		lstm_return = [self.lstms[target](X_var, hidden[target]) for target in range(self.output_series)]
+
+		lstm_out, lstm_hidden = list(zip(*lstm_return))
+		net_out = [self.out_layers[target](lstm_out[target].view(-1, self.hidden_size)) for target in range(self.output_series)]
 		
 		if return_hidden:
 			return net_out, lstm_hidden
@@ -81,12 +83,22 @@ class ParallelLSTMEncoding:
 	def _loss(self, X, Y, hidden = None, return_hidden = False):
 		Y_pred, hidden = self._forward(X, hidden = hidden, return_hidden = True)
 		Y_var = [Variable(torch.from_numpy(Y[:, target][:, np.newaxis]).float()) for target in range(self.output_series)]
+
 		loss = [self.loss_fn(Y_pred[target], Y_var[target]) for target in range(self.output_series)]
 		
 		if return_hidden:
 			return loss, hidden
 		else:
 			return loss
+
+	def _objective(self, X, Y, hidden = None, return_hidden = False):
+		loss, hidden = self._loss(X, Y, hidden = hidden, return_hidden = True)
+		penalty = [self.lam * apply_penalty(lstm.weight_ih_l0, 'group_lasso', self.input_series) for lstm in self.lstms]
+
+		if return_hidden:
+			return [l + p for (l, p) in zip(loss, penalty)], hidden
+		else:
+			return [l + p for (l, p) in zip(loss, penalty)]
 
 	def _train_prox(self, X, Y, truncation = None):
 		if truncation is None:
@@ -135,14 +147,12 @@ class ParallelLSTMEncoding:
 			return hidden
 
 	def _train_builtin_helper(self, X, Y, hidden = None, return_hidden = False):
-		loss, hidden = self._loss(X, Y, hidden = hidden, return_hidden = True)
-		penalty = [apply_penalty(lstm.weight_ih_l0, 'group_lasso', self.input_series) for lstm in self.lstms]
-		total_loss = sum(loss) + self.lam * sum(penalty)
+		objective, hidden = self._objective(X, Y, hidden = hidden, return_hidden = True)
 
 		# Run optimizer
 		[net.zero_grad() for net in chain(self.lstms, self.out_layers)]
 
-		total_loss.backward()
+		sum(objective).backward()
 		[optimizer.step() for optimizer in self.optimizers]
 
 		if return_hidden:
@@ -151,6 +161,10 @@ class ParallelLSTMEncoding:
 	def calculate_loss(self, X, Y):
 		loss = self._loss(X, Y)
 		return [num.data[0] for num in loss]
+
+	def calculate_objective(self, X, Y):
+		objective = self._objective(X, Y)
+		return np.array([num.data[0] for num in objective])
 
 	def predict(self, X):
 		Y_pred = self._forward(X)
@@ -225,8 +239,7 @@ class ParallelLSTMDecoding:
 		if hidden is None:
 			hidden = self._init_hidden()
 		lstm_return = [self.lstms[in_series](X_var[in_series].view(n, 1, 1), hidden[in_series]) for in_series in range(self.input_series)]
-		lstm_return = list(zip(*lstm_return))
-		lstm_out, lstm_hidden = lstm_return
+		lstm_out, lstm_hidden = list(zip(*lstm_return))
 		lstm_layer = torch.cat([out.view(n, self.hidden_size) for out in lstm_out], dim = 1)
 		net_out = [net(lstm_layer) for net in self.out_networks]
 
@@ -244,6 +257,15 @@ class ParallelLSTMDecoding:
 			return loss, hidden
 		else:
 			return loss
+
+	def _objective(self, X, Y, hidden = None, return_hidden = False):
+		loss, hidden = self._loss(X, Y, hidden = hidden, return_hidden = True)
+		penalty = [self.lam * apply_penalty(list(net.parameters())[0], 'group_lasso', self.input_series, lag = self.hidden_size) for net in self.out_networks]
+
+		if return_hidden:
+			return [l + p for (l, p) in zip(loss, penalty)], hidden
+		else:
+			return [l + p for (l, p) in zip(loss, penalty)]
 
 	def _train_prox(self, X, Y, truncation = None):
 		if truncation is None:
@@ -292,14 +314,12 @@ class ParallelLSTMDecoding:
 			return hidden
 
 	def _train_builtin_helper(self, X, Y, hidden = None, return_hidden = False):
-		loss, hidden = self._loss(X, Y, hidden = hidden, return_hidden = True)
-		penalty = [apply_penalty(list(net.parameters())[0], 'group_lasso', self.input_series, lag = self.hidden_size) for net in self.out_networks]
-		total_loss = sum(loss) + self.lam * sum(penalty)
+		objective, hidden = self._objective(X, Y, hidden = hidden, return_hidden = True)
 
 		# Run optimizer
 		[net.zero_grad() for net in chain(self.lstms, self.out_networks)]
 
-		total_loss.backward()
+		sum(objective).backward()
 		self.optimizer.step()
 
 		if return_hidden:
@@ -312,6 +332,10 @@ class ParallelLSTMDecoding:
 	def calculate_loss(self, X, Y):
 		loss = self._loss(X, Y)
 		return [num.data[0] for num in loss]
+
+	def calculate_objective(self, X, Y):
+		objective = self._objective(X, Y)
+		return np.array([num.data[0] for num in objective])
 
 	def get_weights(self):
 		return [list(net.parameters())[0].data.numpy() for net in self.out_networks]
