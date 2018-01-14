@@ -10,7 +10,7 @@ jobfile = 'Batches/%s.job' % jobname
 
 lam_grid = np.append(np.geomspace(10.0, 0.001, num = 50), 0)
 seed_grid = [0]
-hidden_grid = [10]
+hidden_grid = [4, 8]
 network_lag_grid = [1]
 
 nepoch_grid = [5000]
@@ -18,8 +18,8 @@ lr_grid = [0.01]
 cooldown_grid = ['Y']
 
 size_grid = [50]
-type_grid = ['Ecoli']
-number_grid = [1]
+type_grid = ['Ecoli', 'Yeast']
+number_grid = [1, 2, 3]
 
 BASECMD = 'python dream_mlp_encoding.py'
 
