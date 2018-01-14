@@ -1,6 +1,91 @@
 from __future__ import division
 import numpy as np
 from scipy.special import logsumexp
+from scipy.integrate import odeint
+
+def lorentz_96(y, t, force, b):
+	p = y.shape[0]
+	dydt = np.zeros(y.shape[0])
+	for i in range(p):
+		dydt[i] = (y[(i + 1) % p] - y[i - 2]) * y[i - 1] - y[i] + force
+	return dydt
+
+
+"""
+K - connection strength
+omega - natural frequency for each osccilator
+A - the connectivity matrix
+"""
+def Kuramoto(y,t,omega,A,K):
+	p = y.shape[0]
+	dydt = np.zeros(y.shape[0])
+	for i in range(p):
+		dydt[i] = omega[i]
+		base = 0
+		for j in range(p):
+			base += A[j,i]*np.sin(y[j] - y[i])
+		dydt += (K/p)*base
+	return dydt
+
+
+"""
+Code to generate coupled kuramoto oscilators 
+sparsity - the fraction of edges in graph
+p - dimension of system
+K - strength of interactions
+N - number of output time points
+delta_t - sampling between time points
+sd - the noise added ontop of the series
+num_trials - the number of trials/runs from this grid
+
+outputs: 
+Z - a #time points x # replicates x size (p) of series tensor
+GC - size (p) x size (p) graph of directed interactions
+"""
+
+def GenerateKuramotoData(sparsity, p,K=2,N=250,delta_t = .1, sd=2.5,noise_add='global',seed = 543,num_trials=100):
+	GC_on = np.random.binomial(n = 1, p = sparsity, size = (p, p))
+	for i in range(p):
+		GC_on[i,i] = 1
+
+	t = N*delta_t
+	t = np.linspace(0,N*delta_t,N)
+	Z = np.zeros((N,num_trials,p))
+	for k in range(num_trials):
+		omega = np.random.uniform(0.0,2.0,size=p)
+		y0 = np.random.uniform(0.0,2.0*np.pi,size=p)
+		z = odeint(Kuramoto,y0,t,args = (omega,GC_on,K))
+		if noise_add == 'global':
+			z += np.random.normal(loc = 0, scale = sd, size = (N, p))
+		z = np.cos(z)
+		Z[:,k,:] = z
+
+
+	return Z, GC_on
+
+def lorentz_96_model_2(forcing_constant, p, N, delta_t = 0.1, sd = 0.1, seed = 543):
+	np.random.seed(seed)
+
+	burnin = 100
+	N += burnin
+	F = forcing_constant
+	b = 10
+	y0 = np.random.normal(loc = 0, scale = 0.01, size = p)
+	t = N * delta_t
+	t = np.linspace(0, N * delta_t, N)
+
+	z = odeint(lorentz_96, y0, t, args = (F,b))
+
+	z += np.random.normal(loc = 0, scale = sd, size = (N, p))
+
+	GC_on = np.zeros((p, p))
+	for i in range(p):
+		GC_on[i, i] = 1
+		GC_on[i, (i - 1) % p] = 1
+		GC_on[i, (i - 2) % p] = 1
+		GC_on[i, (i + 1) % p] = 1
+
+	return z[range(burnin, N), :], GC_on
 
 def lorentz_96_model(forcing_constant, p, N, delta_t = 0.01, sd = 0.1, noise_add = 'global', seed = 543):
 	np.random.seed(seed)
@@ -196,3 +281,18 @@ def hmm_model(p, N, num_states = 3, sd_e = 0.1, sparsity = 0.2, tau = 2, seed = 
 # 			X[i,j] = sd_e * np.random.randn(1) + mu[j,L[i,j]]
 
 # 	return X, L, GC_on
+
+
+if __name__ == "__main__": 
+	import matplotlib.pyplot as plt
+	#z,GC = lorentz_96_model_2(5,10,100,.1,.1)
+	#plt.plot(z[:, 0], 'b', label='theta(t)')
+	#plt.plot(z[:, 1], 'g', label='omega(t)')
+	#plt.show()
+	sparsity = .1
+	p = 10
+	z, GC = GenerateKuramotoData(sparsity, p,N=250,delta_t = .1, sd=.1,noise_add='global',seed = 543)
+	plt.plot(z[:, 0,:], 'b', label='theta(t)')
+	#plt.plot(z[:, 0,1], 'g', label='omega(t)')
+	plt.show()
+
