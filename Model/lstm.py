@@ -66,13 +66,17 @@ class ParallelLSTMEncoding:
 		if hidden is None:
 			hidden = self._init_hidden()
 		
+		X_var = Variable(torch.from_numpy(X).float())
+
 		if len(X.shape) == 2:
 			n, p = X.shape
-			X_var = Variable(torch.from_numpy(X).float()).view(n, 1, p)
+			X_var = X_var.view(n, 1, p)
 
 		lstm_return = [self.lstms[target](X_var, hidden[target]) for target in range(self.output_series)]
 
 		lstm_out, lstm_hidden = list(zip(*lstm_return))
+
+		# .view(-1, self.hidden_size) works for 2-, 3-dimensional X
 		net_out = [self.out_layers[target](lstm_out[target].view(-1, self.hidden_size)) for target in range(self.output_series)]
 		
 		if return_hidden:
@@ -82,7 +86,12 @@ class ParallelLSTMEncoding:
 
 	def _loss(self, X, Y, hidden = None, return_hidden = False):
 		Y_pred, hidden = self._forward(X, hidden = hidden, return_hidden = True)
-		Y_var = [Variable(torch.from_numpy(Y[:, target][:, np.newaxis]).float()) for target in range(self.output_series)]
+		
+		if len(Y.shape) == 2:
+			Y_var = [Variable(torch.from_numpy(Y[:, target][:, np.newaxis]).float()) for target in range(self.output_series)]
+
+		else:
+			Y_var = [Variable(torch.from_numpy(Y[:, :, target]).float()).view(-1, 1) for target in range(self.output_series)]
 
 		loss = [self.loss_fn(Y_pred[target], Y_var[target]) for target in range(self.output_series)]
 		
@@ -346,101 +355,3 @@ def repackage_hidden(hidden):
 		return Variable(hidden.data)
 	else:
 		return tuple(repackage_hidden(h) for h in hidden)
-
-# class SingleLSTM:
-# 	def __init__(self, input_series, output_series, hidden_size, hidden_layers, lr, opt, lam, penalty):
-# 		# Set up networks
-# 		self.lstm = nn.LSTM(input_series, hidden_size, hidden_layers)
-# 		self.out = nn.Linear(hidden_size, output_series, bias = True)
-
-# 		# Save important arguments
-# 		self.input_series = input_series
-# 		self.output_series = output_series
-# 		self.hidden_size = hidden_size
-# 		self.hidden_layers = hidden_layers
-
-# 		# Set up optimizer
-# 		self.loss_fn = nn.MSELoss()
-# 		self.penalty = penalty
-# 		self.lam = lam
-# 		self.lr = lr
-
-# 		param_list = []
-# 		param_list = param_list + list(self.lstm.parameters())
-# 		param_list = param_list + list(self.out.parameters())
-
-# 		if opt == 'prox':
-# 			self.optimizer = optim.SGD(param_list, lr = lr, momentum = 0.9)
-# 			self.train = self._train_prox
-# 		else:
-# 			if opt == 'adam':
-# 				self.optimizer = optim.Adam(param_list, lr = lr)
-# 			elif opt == 'sgd':
-# 				self.optimizer = optim.SGD(param_list, lr = lr)
-# 			elif opt == 'momentum':
-# 				self.optimizer = optim.SGD(param_list, lr = lr, momentum = 0.9)
-# 			else:
-# 				raise ValueError('opt must be a valid option')
-
-# 			self.train = self._train_builtin
-
-# 	def predict(self, X, hidden = None):
-# 		out = self._forward(X, hidden = hidden)
-# 		return out.data.numpy()
-
-# 	def _forward(self, X, hidden = None):
-# 		if hidden is None:
-# 			hidden = self.init_hidden()
-
-# 		n, p = X.shape
-# 		X_var = Variable(torch.from_numpy(X).float())
-
-# 		lstm_out, hidden = self.lstm(X_var.view(n, 1, p), hidden)
-# 		out = self.out(lstm_out.view(n, self.hidden_size))
-
-# 		return out
-
-# 	def init_hidden(self):
-# 		return (Variable(torch.zeros(self.hidden_layers, 1, self.hidden_size)), 
-# 			Variable(torch.zeros(self.hidden_layers, 1, self.hidden_size)))
-
-# 	def _train_prox(self, X, Y, hidden = None):
-# 		# Compute mse
-# 		Y_pred = self._forward(X, hidden = hidden)
-# 		Y_var = Variable(torch.from_numpy(Y).float())
-# 		mse = self.loss_fn(Y_pred, Y_var)
-
-# 		# Take gradient step
-# 		self.lstm.zero_grad()
-# 		self.out.zero_grad()
-
-# 		mse.backward()
-# 		self.optimizer.step()
-
-# 		# Apply proximal operator to first weight matrix
-
-# 	def _train_builtin(self, X, Y, hidden = None):
-# 		# Compute mse
-# 		Y_pred = self._forward(X, hidden = hidden)
-# 		Y_var = Variable(torch.from_numpy(Y).float())
-# 		mse = self.loss_fn(Y_pred, Y_var)
-
-# 		# Compute regularization penalties on first weight matrix
-# 		loss = mse
-
-# 		# Take gradient step
-# 		self.lstm.zero_grad()
-# 		self.out.zero_grad()
-
-# 		loss.backward()
-# 		self.optimizer.step()
-
-# 	def calculate_mse(self, X, Y, hidden = None):
-# 		Y_pred = self._forward(X, hidden = hidden)
-
-# 		Y_var = Variable(torch.from_numpy(Y).float())
-# 		mse = self.loss_fn(Y_pred, Y_var)
-# 		return mse.data[0]
-
-# 	def get_weights(self):
-# 		return self.lstm.weight_ih_l0.data.numpy()
