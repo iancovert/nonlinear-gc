@@ -222,12 +222,18 @@ def long_lag_var_model(sparsity, p, sd_beta, sd_e, N, lag = 20, seed = 543):
 
 def hmm_model(p, N, num_states = 3, sd_e = 0.1, sparsity = 0.2, tau = 2, seed = 543):
 	np.random.seed(seed)
-	
+	con_per_edge = int(np.ceil(p*sparsity))
 	Z_sig = 0.3
 	Z = np.zeros((p, p, num_states, num_states))
-	GC_on = np.random.binomial(1, sparsity, p * p).reshape(p,p)
+
+	GC_on = np.zeros((p,p))
 	for i in range(p):
+		possible_choices = np.setdiff1d(np.arange(p),i)
+		selected = np.random.choice(possible_choices,con_per_edge,replace=False)
+		GC_on[selected,i] = 1
 		GC_on[i,i] = 1
+
+
 	mu = np.random.uniform(low = -5.0, high = 5.0, size = (p, num_states))
 	for i in range(p):
 		for j in range(p):
@@ -301,4 +307,8 @@ if __name__ == "__main__":
 	plt.plot(z[:, 0,:], 'b', label='theta(t)')
 	#plt.plot(z[:, 0,1], 'g', label='omega(t)')
 	plt.show()
+
+	X,L,GC_on = hmm_model(10, 200)
+
+
 
