@@ -10,7 +10,6 @@ def lorentz_96(y, t, force, b):
 		dydt[i] = (y[(i + 1) % p] - y[i - 2]) * y[i - 1] - y[i] + force
 	return dydt
 
-
 """
 K - connection strength
 omega - natural frequency for each osccilator
@@ -23,10 +22,9 @@ def Kuramoto(y,t,omega,A,K):
 		dydt[i] = omega[i]
 		base = 0
 		for j in range(p):
-			base += A[j,i]*np.sin(y[j] - y[i])
-		dydt += (K/p)*base
+			base += A[i,j]*np.sin(y[i] - y[j])
+		dydt[i] += (K/p) * base
 	return dydt
-
 
 """
 Code to generate coupled kuramoto oscilators 
@@ -42,24 +40,32 @@ outputs:
 Z - a #time points x # replicates x size (p) of series tensor
 GC - size (p) x size (p) graph of directed interactions
 """
+def kuramoto_model(sparsity, p, K = 2, N = 250, delta_t = 0.1, sd = 2.5, seed = 345, num_trials = 100, standardized = True):
+	np.random.seed(seed)
 
-def GenerateKuramotoData(sparsity, p,K=2,N=250,delta_t = .1, sd=2.5,noise_add='global',seed = 543,num_trials=100):
-	GC_on = np.random.binomial(n = 1, p = sparsity, size = (p, p))
-	for i in range(p):
-		GC_on[i,i] = 1
+	# Determine dependencies
+	if standardized:
+		GC_on = np.zeros((p,p))
+		con_per_comp = int(p * sparsity) - 1
+		for i in range(p):
+			possible_choices = np.setdiff1d(np.arange(p),i)
+			selected = np.random.choice(possible_choices, con_per_comp, replace = False)
+			GC_on[i, selected] = 1
+			GC_on[i,i] = 1
+	else:
+		GC_on = np.maximum(np.random.binomial(n = 1, p = sparsity, size = (p, p)), np.eye(p))
 
+	# Generate data
 	t = N*delta_t
 	t = np.linspace(0,N*delta_t,N)
 	Z = np.zeros((N,num_trials,p))
 	for k in range(num_trials):
 		omega = np.random.uniform(0.0,2.0,size=p)
-		y0 = np.random.uniform(0.0,2.0*np.pi,size=p)
+		y0 = np.random.uniform(0.0, 2.0 * np.pi, size=p)
 		z = odeint(Kuramoto,y0,t,args = (omega,GC_on,K))
-		if noise_add == 'global':
-			z += np.random.normal(loc = 0, scale = sd, size = (N, p))
+		z += np.random.normal(loc = 0, scale = sd, size = (N, p))
 		z = np.cos(z)
 		Z[:,k,:] = z
-
 
 	return Z, GC_on
 
@@ -214,21 +220,32 @@ def long_lag_var_model(sparsity, p, sd_beta, sd_e, N, lag = 20, seed = 543):
 
 	return X.T, beta, np.maximum(GC_on, np.eye(p))
 
-def hmm_model(p, N, num_states = 3, sd_e = 0.1, sparsity = 0.2, tau = 2, seed = 543):
+def hmm_model(p, N, num_states = 3, sd_e = 0.1, sparsity = 0.2, tau = 2, seed = 321, standardized = True):
 	np.random.seed(seed)
 	
 	Z_sig = 0.3
 	Z = np.zeros((p, p, num_states, num_states))
-	GC_on = np.random.binomial(1, sparsity, p * p).reshape(p,p)
-	for i in range(p):
-		GC_on[i,i] = 1
+
+	# Determine dependencies
+	if standardized:
+		GC_on = np.zeros((p,p))
+		con_per_comp = int(p * sparsity) - 1
+		for i in range(p):
+			possible_choices = np.setdiff1d(np.arange(p),i)
+			selected = np.random.choice(possible_choices, con_per_comp, replace = False)
+			GC_on[i, selected] = 1
+			GC_on[i,i] = 1
+	else:
+		GC_on = np.maximum(np.random.binomial(n = 1, p = sparsity, size = (p, p)), np.eye(p))
+
+	# Generate mean emission for each state
 	mu = np.random.uniform(low = -5.0, high = 5.0, size = (p, num_states))
 	for i in range(p):
 		for j in range(p):
 			if GC_on[i,j]:
 				Z[i,j,:,:] = Z_sig * np.random.randn(num_states,num_states)
 
-    # generate state sequence
+    # Generate state sequence
 	L = np.zeros((N,p)).astype(int)
 	for t in range(1,N):
 		for i in range(p):
@@ -239,49 +256,13 @@ def hmm_model(p, N, num_states = 3, sd_e = 0.1, sparsity = 0.2, tau = 2, seed = 
 			switch_prob = np.exp(switch_prob - logsumexp(switch_prob))
 			L[t,i] = np.nonzero(np.random.multinomial(1, switch_prob))[0][0]
 
-    # generate outputs from state sequence
+    # Generate emissions from state sequence
 	X = np.zeros((N,p))
 	for i in range(N):
 		for j in range(p):
 			X[i,j] = sd_e * np.random.randn(1) + mu[j,L[i,j]]
 
 	return X, L, GC_on
-
-# def standardized_hmm_model(p, N, num_states = 3, sd_e = 0.1, sparsity = 0.2, tau = 2, seed = 543):
-# 	np.random.seed(seed)
-	
-# 	Z_sig = 0.3
-# 	Z = np.zeros((p, p, num_states, num_states))
-	
-# 	GC_on = np.random.binomial(1, sparsity, p * p).reshape(p,p)
-# 	for i in range(p):
-# 		GC_on[i,i] = 1
-	
-# 	mu = np.random.uniform(low = -5.0, high = 5.0, size = (p, num_states))
-# 	for i in range(p):
-# 		for j in range(p):
-# 			if GC_on[i,j]:
-# 				Z[i,j,:,:] = Z_sig * np.random.randn(num_states,num_states)
-
-#     # generate state sequence
-# 	L = np.zeros((N,p)).astype(int)
-# 	for t in range(1,N):
-# 		for i in range(p):
-# 			switch_prob = np.zeros(num_states)
-# 			for j in range(p):
-# 				switch_prob += Z[i,j,L[t-1,j],:]
-# 			switch_prob = switch_prob * tau
-# 			switch_prob = np.exp(switch_prob - logsumexp(switch_prob))
-# 			L[t,i] = np.nonzero(np.random.multinomial(1, switch_prob))[0][0]
-
-#     # generate outputs from state sequence
-# 	X = np.zeros((N,p))
-# 	for i in range(N):
-# 		for j in range(p):
-# 			X[i,j] = sd_e * np.random.randn(1) + mu[j,L[i,j]]
-
-# 	return X, L, GC_on
-
 
 if __name__ == "__main__": 
 	import matplotlib.pyplot as plt
@@ -295,4 +276,8 @@ if __name__ == "__main__":
 	plt.plot(z[:, 0,:], 'b', label='theta(t)')
 	#plt.plot(z[:, 0,1], 'g', label='omega(t)')
 	plt.show()
+
+	X,L,GC_on = hmm_model(10, 200)
+
+
 

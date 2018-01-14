@@ -90,14 +90,26 @@ def whiten_data_cholesky(X):
 
 	return np.dot(X_centered, L_inv.T)
 
-def normalize(X):
+def normalize(X, scale_global = True):
 	if len(X.shape) == 2:
 		X_centered = X - np.mean(X, axis = 0)
-		sigma = np.sqrt(np.var(X, axis = 0))
+		
+		if scale_global:
+			sigma = np.sqrt(np.var(X))
+		else:
+			sigma = np.sqrt(np.var(X, axis = 0))
+		
 		return np.divide(X_centered, sigma)
+		
 	else:
 		X_normalized = X.copy()
 		for i in range(X.shape[2]):
 			X_normalized[:, :, i] = X_normalized[:, :, i] - np.mean(X_normalized[:, :, i])
-			X_normalized[:, :, i] = X_normalized[:, :, i] / np.sqrt(np.var(X_normalized[:, :, i]))
+			
+		if scale_global:
+			X_normalized = np.divide(X_normalized, np.sqrt(np.var(X_normalized)))
+		else:
+			for i in range(X.shape[2]):
+				X_normalized[:, :, i] = np.divide(X_normalized[:, :, i], np.sqrt(np.var(X_normalized[:, :, i])))
+		
 		return X_normalized
