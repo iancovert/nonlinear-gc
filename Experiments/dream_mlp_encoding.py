@@ -63,7 +63,7 @@ X_train, Y_train, _, _ = format_replicate_ts_data(X, lag = args.network_lag, val
 # Get model
 if args.seed != 0:
 	torch.manual_seed(args.seed)
-model = ParallelMLPEncoding(Y_train.shape[1], Y_train.shape[1], args.network_lag, [args.hidden], args.lr, 'prox', args.lam, 'group_lasso')
+model = ParallelMLPEncoding(Y_train.shape[1], Y_train.shape[1], args.network_lag, [args.hidden], args.lr, 'prox', args.lam, 'group_lasso', nonlinearity = 'sigmoid')
 
 # Run experiment
 train_loss, train_objective, best_properties = run_experiment(model, X_train, Y_train, args.nepoch, predictions = True, loss_check = args.loss_check, cooldown = args.cooldown.lower() == 'y')
