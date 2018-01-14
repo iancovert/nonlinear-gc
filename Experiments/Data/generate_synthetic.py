@@ -44,8 +44,14 @@ GC - size (p) x size (p) graph of directed interactions
 """
 
 def GenerateKuramotoData(sparsity, p,K=2,N=250,delta_t = .1, sd=2.5,noise_add='global',seed = 543,num_trials=100):
-	GC_on = np.random.binomial(n = 1, p = sparsity, size = (p, p))
+	con_per_edge = int(np.ceil(p*sparsity))
+
+	#GC_on = np.random.binomial(n = 1, p = sparsity, size = (p, p))
+	GC_on = np.zeros((p,p))
 	for i in range(p):
+		possible_choices = np.setdiff1d(np.arange(p),i)
+		selected = np.random.choice(possible_choices,con_per_edge,replace=False)
+		GC_on[selected,i] = 1
 		GC_on[i,i] = 1
 
 	t = N*delta_t
