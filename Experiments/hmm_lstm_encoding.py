@@ -15,20 +15,23 @@ from Data.data_processing import split_data, normalize
 # Model modules
 sys.path.append('../Model')
 from lstm import ParallelLSTMEncoding
-from experiment_cv import run_recurrent_experiment
+from experiment_opt import run_recurrent_experiment
 
 # Parse command line arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('--nepoch', type = int, default = 1000, help = 'number of training epochs')
-parser.add_argument('--lr', type = float, default = 0.001, help = 'learning rate')
+
 parser.add_argument('--lam', type = float, default = 0.1, help = 'lambda for weight decay')
 parser.add_argument('--seed', type = int, default = 12345, help = 'seed')
 parser.add_argument('--hidden', type = int, default = 10, help = 'hidden units')
 
+parser.add_argument('--nepoch', type = int, default = 1000, help = 'number of training epochs')
+parser.add_argument('--lr', type = float, default = 0.001, help = 'learning rate')
+parser.add_argument('--cooldown', type = str, default = 'N', help = 'learning rate cooldown')
+
 parser.add_argument('--sparsity', type = float, default = 0.2, help = 'sparsity of time series')
 parser.add_argument('--p', type = int, default = 10, help = 'dimensionality of time series')
 parser.add_argument('--T', type = int, default = 1000, help = 'length of time series')
-parser.add_argument('--states', type = int, default = 5, help = 'number of states in HMM')
+parser.add_argument('--states', type = int, default = 3, help = 'number of HMM states')
 
 parser.add_argument('--window', type = int, default = 20, help = 'size of sliding windows for splitting training data')
 parser.add_argument('--stride', type = int, default = 10, help = 'size of stride of sliding windows for splitting training data')
@@ -42,7 +45,8 @@ experiment_base = 'HMM LSTM Encoding'
 results_dir = 'Results/' + experiment_base
 
 experiment_name = results_dir + '/expt'
-experiment_name += '_nepoch=%d_lr=%e_lam=%e_seed=%d_hidden=%d' % (args.nepoch, args.lr, args.lam, args.seed, args.hidden)
+experiment_name += '_nepoch=%d_lr=%e_cooldown=%s' % (args.nepoch, args.lr, args.cooldown)
+experiment_name += '_lam=%e_seed=%d_hidden=%d' % (args.lam, args.seed, args.hidden)
 experiment_name += '_spars=%e_p=%d_T=%d_states=%d.out' % (args.sparsity, args.p, args.T, args.states)
 
 # Create directory, if necessary
@@ -55,7 +59,7 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # Prepare data
-X, _, GC = hmm_model(args.p, args.T, num_states = args.states, sparsity = args.sparsity)
+X, _, GC = hmm_model(args.p, args.T, args.states, standardized = True)
 X = normalize(X)
 X_train, X_val = split_data(X, validation = 0.1)
 Y_train = X_train[1:, :]
@@ -63,23 +67,21 @@ X_train = X_train[:-1, :]
 Y_val = X_val[1:, :]
 X_val = X_val[:-1, :]
 
-p_in = X_val.shape[1]
-p_out = Y_val.shape[1]
-
 # Get model
 if args.seed != 0:
 	torch.manual_seed(args.seed)
-model = ParallelLSTMEncoding(p_in, p_out, args.hidden, 1, args.lr, 'prox', args.lam)
+model = ParallelLSTMEncoding(Y_val.shape[1], Y_val.shape[1], args.hidden, 1, args.lr, 'prox', args.lam)
 
 # Run experiment
-train_loss, val_loss, best_properties = run_recurrent_experiment(model, X_train, Y_train, X_val, Y_val, 
-	args.nepoch, window_size = args.window, stride_size = args.stride, truncation = args.truncation, predictions = True, loss_check = args.loss_check)
+train_loss, val_loss, best_properties = run_recurrent_experiment(model, X_train, Y_train, 
+	args.nepoch, window_size = args.window, stride_size = args.stride, truncation = args.truncation, predictions = True, loss_check = args.loss_check, cooldown = args.cooldown.lower() == 'y')
 
 # Format results
 experiment_params = {
 	'nepoch': args.nepoch,
-	'lam': args.lam,
 	'lr': args.lr,
+	'cooldown': args.cooldown,
+	'lam': args.lam,
 	'seed': args.seed,
 	'hidden': args.hidden
 }
@@ -94,9 +96,8 @@ data_params = {
 
 best_results = {
 	'best_nepoch': [props['nepoch'] for props in best_properties],
-	'best_val_loss': [props['val_loss'] for props in best_properties],
+	'best_objective': [props['train_objective'] for props in best_properties],
 	'predictions_train': np.concatenate([props['predictions_train'][:, np.newaxis] for props in best_properties], axis = 1),
-	'predictions_val': np.concatenate([props['predictions_val'][:, np.newaxis] for props in best_properties], axis = 1),
 	'GC_est': [np.linalg.norm(props['weights'], axis = 0) for props in best_properties]
 }
 
