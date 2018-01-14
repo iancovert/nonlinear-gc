@@ -3,7 +3,7 @@ import numpy as np
 from scipy.special import logsumexp
 from scipy.integrate import odeint
 
-def lorentz_96(y,t,force,b):
+def lorentz_96(y, t, force, b):
 	p = y.shape[0]
 	dydt = np.zeros(y.shape[0])
 	for i in range(p):
@@ -63,19 +63,20 @@ def GenerateKuramotoData(sparsity, p,K=2,N=250,delta_t = .1, sd=2.5,noise_add='g
 
 	return Z, GC_on
 
-def lorentz_96_model_2(forcing_constant,p,N,delta_t = .1, sd=.1,noise_add='global',seed = 543):
+def lorentz_96_model_2(forcing_constant, p, N, delta_t = 0.1, sd = 0.1, seed = 543):
+	np.random.seed(seed)
+
 	burnin = 100
 	N += burnin
 	F = forcing_constant
 	b = 10
 	y0 = np.random.normal(loc = 0, scale = 0.01, size = p)
-	t = N*delta_t
-	t = np.linspace(0,N*delta_t,N)
+	t = N * delta_t
+	t = np.linspace(0, N * delta_t, N)
 
-	z = odeint(lorentz_96, y0, t, args=(F,b))
+	z = odeint(lorentz_96, y0, t, args = (F,b))
 
-	if noise_add == 'global':
-		z += np.random.normal(loc = 0, scale = sd, size = (N, p))
+	z += np.random.normal(loc = 0, scale = sd, size = (N, p))
 
 	GC_on = np.zeros((p, p))
 	for i in range(p):
@@ -85,7 +86,6 @@ def lorentz_96_model_2(forcing_constant,p,N,delta_t = .1, sd=.1,noise_add='globa
 		GC_on[i, (i + 1) % p] = 1
 
 	return z[range(burnin, N), :], GC_on
-
 
 def lorentz_96_model(forcing_constant, p, N, delta_t = 0.01, sd = 0.1, noise_add = 'global', seed = 543):
 	np.random.seed(seed)

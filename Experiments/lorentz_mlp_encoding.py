@@ -9,7 +9,7 @@ import shutil
 import sys
 
 # Data modules
-from Data.generate_synthetic import lorentz_96_model
+from Data.generate_synthetic import lorentz_96_model_2
 from Data.data_processing import format_ts_data, normalize
 
 # Model modules
@@ -55,7 +55,7 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # Prepare data
-X, GC = lorentz_96_model(8, args.p, args.T)
+X, GC = lorentz_96_model_2(8, args.p, args.T)
 X = normalize(X)
 X_train, Y_train, _, _ = format_ts_data(X, args.network_lag, validation = 0.0)
 
