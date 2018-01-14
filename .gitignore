@@ -3,3 +3,4 @@
 *.out
 *.data
 __pycache__/
+Jobs/Batches

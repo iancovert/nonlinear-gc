@@ -1,6 +1,6 @@
 import numpy as np
 
-def run_experiment(model, X_train, Y_train, X_val, Y_val, nepoch, mbsize = None, verbose = True, loss_check = 100, predictions = False, min_lr = 1e-8):
+def run_experiment(model, X_train, Y_train, X_val, Y_val, nepoch, mbsize = None, verbose = True, loss_check = 100, predictions = False, min_lr = 1e-8, cooldown = False):
 	# Batch parameters
 	minibatches = not mbsize is None
 	if minibatches:
@@ -79,13 +79,14 @@ def run_experiment(model, X_train, Y_train, X_val, Y_val, nepoch, mbsize = None,
 						'nepoch': epoch,
 						'weights': model.get_weights(p = p)
 					}
-				elif val_loss[counter, p] > val_loss[counter - 1, p]:
+				elif cooldown and val_loss[counter, p] > val_loss[counter - 1, p]:
 					model.cooldown(p)
 
 			# Add accuracies, if necessary
 			if model.task == 'classification':
 				for p in range(d_out):
 					if modified[p]:
+						best_properties[p]['train_accuracy'] = train_accuracy[counter, p]
 						best_properties[p]['val_accuracy'] = val_accuracy[counter, p]
 
 			# Add predictions, if necessary
@@ -101,7 +102,7 @@ def run_experiment(model, X_train, Y_train, X_val, Y_val, nepoch, mbsize = None,
 			counter += 1
 
 			# Check if all learning rates are low enough to stop
-			if p - sum(modified) > 0 and sum([lr > min_lr for lr in model.lr]) == 0:
+			if cooldown and p - sum(modified) > 0 and sum([lr > min_lr for lr in model.lr]) == 0:
 				break
 
 	if verbose:
@@ -206,3 +207,84 @@ def run_recurrent_experiment(model, X_train, Y_train, X_val, Y_val, nepoch, wind
 		print('Done training')
 
 	return train_loss[:counter, :], val_loss[:counter, :], best_properties
+
+# def run_recurrent_experiment_minibatched(model, X_train, Y_train, X_val, Y_val, nepoch, truncation = None, verbose = True, loss_check = 100, predictions = False, min_lr = 1e-8):
+# 	# Minibatching parameters
+
+
+# 	# Determine output size
+# 	nchecks = max(int(nepoch / loss_check), 1)
+# 	if len(Y_train.shape) == 1:
+# 		d_out = 1
+# 	else:
+# 		d_out = Y_train.shape[1]
+
+# 	# Prepare for training
+# 	train_loss = np.zeros((nchecks, d_out))
+# 	val_loss = np.zeros((nchecks, d_out))
+# 	counter = 0
+
+# 	# Store best results
+# 	best_properties = [None] * d_out
+# 	best_val_loss = [np.inf] * d_out
+
+# 	# Begin training
+# 	for epoch in range(nepoch):
+
+# 		# TODO
+# 		# for 
+# 		# 	x_batch = X_train[]
+# 		# 	y_batch = Y_train[]
+# 		# 	model.train(x_batch, y_batch, truncation = truncation)
+
+# 		# Check progress
+# 		if epoch % loss_check == 0:
+# 			# Save results
+# 			# TODO
+# 			train_loss[counter, :] = model.calculate_loss(X_train, Y_train)
+# 			val_loss[counter, :] = model.calculate_loss(X_val, Y_val)
+
+# 			# Print results
+# 			if verbose:
+# 				print('----------')
+# 				print('epoch %d' % epoch)
+# 				print('train loss = %e' % train_loss[counter, 0])
+# 				print('val loss = %e' % val_loss[counter, 0])
+# 				print('----------')
+
+# 			# Check if this is best result so far
+# 			modified = [False] * d_out	
+# 			for p in range(d_out):
+# 				if val_loss[counter, p] < best_val_loss[p]:
+# 					modified[p] = True
+
+# 					best_val_loss[p] = val_loss[counter, p]
+# 					best_properties[p] = {
+# 						'val_loss': val_loss[counter, p],
+# 						'nepoch': epoch,
+# 						'weights': model.get_weights(p = p)
+# 					}
+# 				elif val_loss[counter, p] > val_loss[counter - 1, p]:
+# 					model.cooldown(p)
+
+# 			# Add predictions, if necessary
+# 			if predictions and sum(modified) > 0:
+# 				train_forecasts = model.predict(X_train)
+# 				val_forecasts = model.predict(X_val)
+					
+# 				for p in range(d_out):
+# 					if modified[p]:
+# 						# TODO
+# 						best_properties[p]['predictions_train'] = train_forecasts[:, p]
+# 						best_properties[p]['predictions_val'] = val_forecasts[:, p]
+
+# 			counter += 1
+
+# 			# Check if all learning rates are low enough to stop
+# 			if p - sum(modified) > 0 and sum([lr > min_lr for lr in model.lr]) == 0:
+# 				break
+
+# 	if verbose:
+# 		print('Done training')
+
+# 	return train_loss[:counter, :], val_loss[:counter, :], best_properties
