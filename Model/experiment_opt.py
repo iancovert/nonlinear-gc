@@ -106,19 +106,25 @@ def run_experiment(model, X_train, Y_train, nepoch, mbsize = None, verbose = Tru
 	return train_loss[:counter, :], train_objective[:counter, :], best_properties
 
 def run_recurrent_experiment(model, X_train, Y_train, nepoch, window_size = None, stride_size = None, truncation = None, verbose = True, loss_check = 100, predictions = False, min_lr = 1e-8, cooldown = False):
-	# Window parameters
-	T = X_train.shape[0]
-	if window_size is not None:
-		windowed = True
-		if stride_size is None:
-			stride_size = window_size
+	if len(X_train.shape) == 2:
+		replicates = False
+	
+		# Window parameters
+		T = X_train.shape[0]
+		if window_size is not None:
+			windowed = True
+			if stride_size is None:
+				stride_size = window_size
+
+	else:
+		replicates = True
 
 	# Determine output size
 	nchecks = max(int(nepoch / loss_check), 1)
 	if len(Y_train.shape) == 1:
 		d_out = 1
 	else:
-		d_out = Y_train.shape[1]
+		d_out = Y_train.shape[-1]
 
 	# Prepare for training
 	train_loss = np.zeros((nchecks, d_out))
@@ -132,25 +138,27 @@ def run_recurrent_experiment(model, X_train, Y_train, nepoch, window_size = None
 	# Begin training
 	for epoch in range(nepoch):
 
-		if windowed:
-			start = 0
-			end = window_size
-
-			while end < T + 1:
-				x_batch = X_train[range(start, end), :]
-				y_batch = Y_train[range(start, end), :]
+		if replicates:
+			for i in range(X_train.shape[1]):
+				x_batch = X_train[:, i, :]
+				y_batch = Y_train[:, i, :]
 				model.train(x_batch, y_batch, truncation = truncation)
 
-				start = start + stride_size
-				end = start + window_size
-
-			# if start < T:
-			# 	x_batch = X_train[range(start, T), :]
-			# 	y_batch = Y_train[range(start, T), :]
-			# 	model.train(x_batch, y_batch, truncation = truncation)
-
 		else:
-			model.train(X_train, Y_train, truncation = truncation)
+			if windowed:
+				start = 0
+				end = window_size
+
+				while end < T + 1:
+					x_batch = X_train[range(start, end), :]
+					y_batch = Y_train[range(start, end), :]
+					model.train(x_batch, y_batch, truncation = truncation)
+
+					start = start + stride_size
+					end = start + window_size
+
+			else:
+				model.train(X_train, Y_train, truncation = truncation)
 
 		# Check progress
 		if epoch % loss_check == 0:
