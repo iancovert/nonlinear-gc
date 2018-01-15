@@ -15,14 +15,14 @@ K - connection strength
 omega - natural frequency for each osccilator
 A - the connectivity matrix
 """
-def Kuramoto(y,t,omega,A,K):
+def Kuramoto(y, t, omega, A, K):
 	p = y.shape[0]
-	dydt = np.zeros(y.shape[0])
+	dydt = np.zeros(p)
 	for i in range(p):
 		dydt[i] = omega[i]
 		base = 0
 		for j in range(p):
-			base += A[i,j]*np.sin(y[i] - y[j])
+			base += A[i,j] * np.sin(y[i] - y[j])
 		dydt[i] += (K/p) * base
 	return dydt
 
@@ -40,7 +40,7 @@ outputs:
 Z - a #time points x # replicates x size (p) of series tensor
 GC - size (p) x size (p) graph of directed interactions
 """
-def kuramoto_model(sparsity, p, K = 2, N = 250, delta_t = 0.1, sd = 2.5, seed = 345, num_trials = 100, standardized = True):
+def kuramoto_model(sparsity, p, K = 2, N = 250, delta_t = 0.1, sd = 2.5, seed = 345, num_trials = 100, standardized = True, cos_transform = True):
 	np.random.seed(seed)
 
 	# Determine dependencies
@@ -56,28 +56,26 @@ def kuramoto_model(sparsity, p, K = 2, N = 250, delta_t = 0.1, sd = 2.5, seed = 
 		GC_on = np.maximum(np.random.binomial(n = 1, p = sparsity, size = (p, p)), np.eye(p))
 
 	# Generate data
-	t = N*delta_t
 	t = np.linspace(0,N*delta_t,N)
 	Z = np.zeros((N,num_trials,p))
 	for k in range(num_trials):
 		omega = np.random.uniform(0.0,2.0,size=p)
 		y0 = np.random.uniform(0.0, 2.0 * np.pi, size=p)
-		z = odeint(Kuramoto,y0,t,args = (omega,GC_on,K))
+		z = odeint(Kuramoto, y0, t, args = (omega,GC_on,K))
 		z += np.random.normal(loc = 0, scale = sd, size = (N, p))
-		z = np.cos(z)
+		if cos_transform:
+			z = np.cos(z)
 		Z[:,k,:] = z
 
 	return Z, GC_on
 
-def lorentz_96_model_2(forcing_constant, p, N, delta_t = 0.1, sd = 0.1, seed = 543):
+def lorentz_96_model_2(F, p, N, delta_t = 0.1, sd = 0.1, seed = 543):
 	np.random.seed(seed)
 
 	burnin = 100
 	N += burnin
-	F = forcing_constant
 	b = 10
 	y0 = np.random.normal(loc = 0, scale = 0.01, size = p)
-	t = N * delta_t
 	t = np.linspace(0, N * delta_t, N)
 
 	z = odeint(lorentz_96, y0, t, args = (F,b))
@@ -191,21 +189,56 @@ def standardized_var_model(sparsity, p, beta_value, sd_e, N, lag, seed = 654):
 
 	return X.T, beta_full, GC_on
 
-def long_lag_var_model(sparsity, p, sd_beta, sd_e, N, lag = 20, seed = 543):
+def long_lag_var_model(sparsity, p, sd_beta, sd_e, N, lag = 20, seed = 765, mixed = True):
 	np.random.seed(seed)
 	
 	radius = 0.97
 	min_effect = 1
-	GC_on = np.random.binomial(n = 1, p = sparsity, size = (p, p))
-	np.fill_diagonal(GC_on, 0.0)
+	GC_on = np.maximum(np.random.binomial(n = 1, p = sparsity, size = (p, p)), np.eye(p))
 	GC_lag = np.zeros((p, p * lag))
-	GC_lag[:, range(0, p)] = np.eye(p)
+	if mixed:
+		GC_lag[:, range(0, p)] = np.eye(p)
 	GC_lag[:, range(p * (lag - 1), p * lag)] = GC_on
 
 	beta = np.random.normal(loc = 0, scale = sd_beta, size = (p, p * lag))
 	beta[(beta < min_effect) & (beta > 0)] = min_effect
 	beta[(beta > min_effect) & (beta < 0)] = - min_effect
 	beta = np.multiply(beta, GC_lag)
+
+	not_stationary = True
+	while not_stationary:
+		beta, not_stationary = stationary_var(beta, p, lag, radius)
+
+	errors = np.random.normal(loc = 0, scale = sd_e, size = (p, N))
+
+	X = np.zeros((p, N))
+	X[:, range(lag)] = errors[:, range(lag)]
+	for i in range(lag, N):
+		X[:, i] = np.dot(beta, X[:, range(i - lag, i)].flatten(order = 'F')) + errors[:, i]
+
+	return X.T, beta, np.maximum(GC_on, np.eye(p))
+
+def standardized_long_lag_var_model(sparsity, p, beta_value, sd_e, N, lag = 20, seed = 765, mixed = True):
+	np.random.seed(seed)
+	
+	radius = 0.97
+	min_effect = 1
+
+	# Determine dependencies
+	num_nonzero = int(p * sparsity) - 1
+	for i in range(p):
+		choice = np.random.choice(p - 1, size = num_nonzero, replace = False)
+		choice[choice >= i] += 1
+		beta[i, choice] = beta_value
+		GC_on[i, choice] = 1
+
+	# Determine full beta
+	GC_lag = np.zeros((p, p * lag))
+	if mixed:
+		GC_lag[:, range(0, p)] = np.eye(p)
+	GC_lag[:, range(p * (lag - 1), p * lag)] = GC_on
+
+	beta = beta_value * GC_lag
 
 	not_stationary = True
 	while not_stationary:
