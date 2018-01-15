@@ -7,7 +7,7 @@ from scipy.integrate import odeint
 """
 input:
 GC_true - pxp binary matrix 
-GC_est - mxpxp tensor of binary matrices. 
+GC_est - mxpxp tensor of binary matrices. (ordered from least to most sparse)
 thresh - double, value to threshold the GC_est to determine connections
 self_con - boolean, to count self connections or not
 
@@ -37,6 +37,9 @@ def compute_AUC(GC_true,GC_est,thresh,self_con=True):
 		TP = sum(sum((GC_est[i,:,:] == 1)*(GC_true == 1)))
 		P = sum(sum(GC_true == 1))
 		TP_rate[i] = TP/P
+		
+	FP_rate = [0,FP_rate,1]
+	TP_rate = [0,TP_rate,1]
 
 	return TP_rate, FP_rate, np.trapz(TP_rate,FP_rate)
 
