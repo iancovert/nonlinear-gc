@@ -3,6 +3,47 @@ import numpy as np
 from scipy.special import logsumexp
 from scipy.integrate import odeint
 
+
+"""
+input:
+GC_true - pxp binary matrix 
+GC_est - mxpxp tensor of binary matrices. (ordered from least to most sparse)
+thresh - double, value to threshold the GC_est to determine connections
+self_con - boolean, to count self connections or not
+
+output:
+FP - length m False positive rate vector 
+TP - length m True positive rate vector
+auc - area under the ROC curve
+"""
+
+def compute_AUC(GC_true,GC_est,thresh,self_con=True):
+	m = GC_est.shape[0]
+	p = GC_est.shape[1]
+	GC_est[GC_est < thresh] = 0
+	GC_est[GC_est >= thresh] = 1
+	FP_rate = np.zeros(m)
+	TP_rate = np.zeros(m)
+	if (not self_con):
+		GC_true = np.maximum(GC_true,2*np.eye(p))
+		for i in range(m):
+			GC_est[m,:,:] = np.maximum(GC_est[m,:,:],2*np.eye(p))
+
+	for i in range(m):
+		FP = sum(sum((GC_est[i,:,:] == 1)*(GC_true == 0)))
+		N = sum(sum(GC_true == 0))
+		FP_rate[i] = FP/N
+
+		TP = sum(sum((GC_est[i,:,:] == 1)*(GC_true == 1)))
+		P = sum(sum(GC_true == 1))
+		TP_rate[i] = TP/P
+		
+	FP_rate = [0,FP_rate,1]
+	TP_rate = [0,TP_rate,1]
+
+	return TP_rate, FP_rate, np.trapz(TP_rate,FP_rate)
+
+
 def lorentz_96(y, t, force, b):
 	p = y.shape[0]
 	dydt = np.zeros(y.shape[0])
@@ -15,14 +56,14 @@ K - connection strength
 omega - natural frequency for each osccilator
 A - the connectivity matrix
 """
-def Kuramoto(y,t,omega,A,K):
+def Kuramoto(y, t, omega, A, K):
 	p = y.shape[0]
-	dydt = np.zeros(y.shape[0])
+	dydt = np.zeros(p)
 	for i in range(p):
 		dydt[i] = omega[i]
 		base = 0
 		for j in range(p):
-			base += A[i,j]*np.sin(y[i] - y[j])
+			base += A[i,j] * np.sin(y[i] - y[j])
 		dydt[i] += (K/p) * base
 	return dydt
 
@@ -40,7 +81,7 @@ outputs:
 Z - a #time points x # replicates x size (p) of series tensor
 GC - size (p) x size (p) graph of directed interactions
 """
-def kuramoto_model(sparsity, p, K = 2, N = 250, delta_t = 0.1, sd = 2.5, seed = 345, num_trials = 100, standardized = True):
+def kuramoto_model(sparsity, p, K = 2, N = 250, delta_t = 0.1, sd = 2.5, seed = 345, num_trials = 100, standardized = True, cos_transform = True):
 	np.random.seed(seed)
 
 	# Determine dependencies
@@ -56,28 +97,26 @@ def kuramoto_model(sparsity, p, K = 2, N = 250, delta_t = 0.1, sd = 2.5, seed = 
 		GC_on = np.maximum(np.random.binomial(n = 1, p = sparsity, size = (p, p)), np.eye(p))
 
 	# Generate data
-	t = N*delta_t
 	t = np.linspace(0,N*delta_t,N)
 	Z = np.zeros((N,num_trials,p))
 	for k in range(num_trials):
 		omega = np.random.uniform(0.0,2.0,size=p)
 		y0 = np.random.uniform(0.0, 2.0 * np.pi, size=p)
-		z = odeint(Kuramoto,y0,t,args = (omega,GC_on,K))
+		z = odeint(Kuramoto, y0, t, args = (omega,GC_on,K))
 		z += np.random.normal(loc = 0, scale = sd, size = (N, p))
-		z = np.cos(z)
+		if cos_transform:
+			z = np.cos(z)
 		Z[:,k,:] = z
 
 	return Z, GC_on
 
-def lorentz_96_model_2(forcing_constant, p, N, delta_t = 0.1, sd = 0.1, seed = 543):
+def lorentz_96_model_2(F, p, N, delta_t = 0.1, sd = 0.1, seed = 543):
 	np.random.seed(seed)
 
 	burnin = 100
 	N += burnin
-	F = forcing_constant
 	b = 10
 	y0 = np.random.normal(loc = 0, scale = 0.01, size = p)
-	t = N * delta_t
 	t = np.linspace(0, N * delta_t, N)
 
 	z = odeint(lorentz_96, y0, t, args = (F,b))
@@ -191,21 +230,56 @@ def standardized_var_model(sparsity, p, beta_value, sd_e, N, lag, seed = 654):
 
 	return X.T, beta_full, GC_on
 
-def long_lag_var_model(sparsity, p, sd_beta, sd_e, N, lag = 20, seed = 543):
+def long_lag_var_model(sparsity, p, sd_beta, sd_e, N, lag = 20, seed = 765, mixed = True):
 	np.random.seed(seed)
 	
 	radius = 0.97
 	min_effect = 1
-	GC_on = np.random.binomial(n = 1, p = sparsity, size = (p, p))
-	np.fill_diagonal(GC_on, 0.0)
+	GC_on = np.maximum(np.random.binomial(n = 1, p = sparsity, size = (p, p)), np.eye(p))
 	GC_lag = np.zeros((p, p * lag))
-	GC_lag[:, range(0, p)] = np.eye(p)
+	if mixed:
+		GC_lag[:, range(0, p)] = np.eye(p)
 	GC_lag[:, range(p * (lag - 1), p * lag)] = GC_on
 
 	beta = np.random.normal(loc = 0, scale = sd_beta, size = (p, p * lag))
 	beta[(beta < min_effect) & (beta > 0)] = min_effect
 	beta[(beta > min_effect) & (beta < 0)] = - min_effect
 	beta = np.multiply(beta, GC_lag)
+
+	not_stationary = True
+	while not_stationary:
+		beta, not_stationary = stationary_var(beta, p, lag, radius)
+
+	errors = np.random.normal(loc = 0, scale = sd_e, size = (p, N))
+
+	X = np.zeros((p, N))
+	X[:, range(lag)] = errors[:, range(lag)]
+	for i in range(lag, N):
+		X[:, i] = np.dot(beta, X[:, range(i - lag, i)].flatten(order = 'F')) + errors[:, i]
+
+	return X.T, beta, np.maximum(GC_on, np.eye(p))
+
+def standardized_long_lag_var_model(sparsity, p, beta_value, sd_e, N, lag = 20, seed = 765, mixed = True):
+	np.random.seed(seed)
+	
+	radius = 0.97
+	min_effect = 1
+
+	# Determine dependencies
+	num_nonzero = int(p * sparsity) - 1
+	for i in range(p):
+		choice = np.random.choice(p - 1, size = num_nonzero, replace = False)
+		choice[choice >= i] += 1
+		beta[i, choice] = beta_value
+		GC_on[i, choice] = 1
+
+	# Determine full beta
+	GC_lag = np.zeros((p, p * lag))
+	if mixed:
+		GC_lag[:, range(0, p)] = np.eye(p)
+	GC_lag[:, range(p * (lag - 1), p * lag)] = GC_on
+
+	beta = beta_value * GC_lag
 
 	not_stationary = True
 	while not_stationary:
@@ -265,19 +339,28 @@ def hmm_model(p, N, num_states = 3, sd_e = 0.1, sparsity = 0.2, tau = 2, seed = 
 	return X, L, GC_on
 
 if __name__ == "__main__": 
-	import matplotlib.pyplot as plt
+	#import matplotlib.pyplot as plt
 	#z,GC = lorentz_96_model_2(5,10,100,.1,.1)
 	#plt.plot(z[:, 0], 'b', label='theta(t)')
 	#plt.plot(z[:, 1], 'g', label='omega(t)')
 	#plt.show()
-	sparsity = .1
-	p = 10
-	z, GC = GenerateKuramotoData(sparsity, p,N=250,delta_t = .1, sd=.1,noise_add='global',seed = 543)
-	plt.plot(z[:, 0,:], 'b', label='theta(t)')
+	#sparsity = .1
+	#p = 10
+	#z, GC = kuramoto_model(sparsity, p,N=250,delta_t = .1, sd=.1,noise_add='global',seed = 543)
+	#plt.plot(z[:, 0,:], 'b', label='theta(t)')
 	#plt.plot(z[:, 0,1], 'g', label='omega(t)')
-	plt.show()
+	#plt.show()
 
-	X,L,GC_on = hmm_model(10, 200)
+	#X,L,GC_on = hmm_model(10, 200)
+
+
+	GC_true = np.eye(10)
+	GC_est = np.zeros((3,10,10))
+	GC_est[0,:,:] = np.eye(10) + .05
+	GC_est[1,:,:] = np.eye(10) + .05
+	GC_est[2,:,:] = np.eye(10) + .05
+	thresh = .1
+	tp,fp,auc = compute_AUC(GC_true,GC_est,thresh,self_con=True)
 
 
 

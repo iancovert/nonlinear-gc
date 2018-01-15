@@ -57,7 +57,7 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # Prepare data
-X, GC = kuramoto_model(args.sparsity, args.p, num_trials = args.trials, N = args.T, standardized = True)
+X, GC = kuramoto_model(args.sparsity, args.p, num_trials = args.trials, N = args.T, standardized = True, delta_t = 0.01, cos_transform = False)
 X = normalize(X)
 X_train, Y_train, _, _ = format_replicate_ts_data(X, args.network_lag, validation = 0.0)
 
