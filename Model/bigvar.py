@@ -75,7 +75,7 @@ def run_bigvar(Y, p, struct, nlambdas=10, lamratio=10., T1=0, T2=None,
 
     rbigvar = rpackages.importr('BigVAR')
 
-    gran = robjects.FloatVector([nlambdas, lamratio])
+    gran = robjects.FloatVector([lamratio, nlambdas])
     model = rbigvar.constructModel(Y, p, struct, gran,
                                    T1=T1, T2=T2, intercept=use_intercept)
 
