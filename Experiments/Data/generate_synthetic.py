@@ -312,6 +312,9 @@ def hmm_model(p, N, num_states = 3, sd_e = 0.1, sparsity = 0.2, tau = 2, seed = 
 		GC_on = np.maximum(np.random.binomial(n = 1, p = sparsity, size = (p, p)), np.eye(p))
 
 	# Generate mean emission for each state
+	Z_sig = 0.3
+	Z = np.zeros((p, p, num_states, num_states))
+	
 	mu = np.random.uniform(low = -5.0, high = 5.0, size = (p, num_states))
 	for i in range(p):
 		for j in range(p):
@@ -319,9 +322,6 @@ def hmm_model(p, N, num_states = 3, sd_e = 0.1, sparsity = 0.2, tau = 2, seed = 
 				Z[i,j,:,:] = Z_sig * np.random.randn(num_states,num_states)
 
     # Generate state sequence
-	Z_sig = 0.3
-	Z = np.zeros((p, p, num_states, num_states))
-
 	L = np.zeros((N,p)).astype(int)
 	for t in range(1,N):
 		for i in range(p):
