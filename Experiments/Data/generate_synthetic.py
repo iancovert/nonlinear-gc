@@ -3,7 +3,6 @@ import numpy as np
 from scipy.special import logsumexp
 from scipy.integrate import odeint
 
-
 """
 input:
 GC_true - pxp binary matrix 
@@ -42,7 +41,6 @@ def compute_AUC(GC_true,GC_est,thresh,self_con=True):
 	TP_rate = [0,TP_rate,1]
 
 	return TP_rate, FP_rate, np.trapz(TP_rate,FP_rate)
-
 
 def lorentz_96(y, t, force, b):
 	p = y.shape[0]
@@ -235,11 +233,13 @@ def long_lag_var_model(sparsity, p, sd_beta, sd_e, N, lag = 20, seed = 765, mixe
 	
 	radius = 0.97
 	min_effect = 1
-	GC_on = np.maximum(np.random.binomial(n = 1, p = sparsity, size = (p, p)), np.eye(p))
+	GC_on = np.random.binomial(n = 1, p = sparsity, size = (p, p))
 	GC_lag = np.zeros((p, p * lag))
 	if mixed:
 		GC_lag[:, range(0, p)] = np.eye(p)
-	GC_lag[:, range(p * (lag - 1), p * lag)] = GC_on
+		GC_lag[:, range(p * (lag - 1), p * lag)] = GC_on
+	else:
+		GC_lag[:, range(p * (lag - 1), p * lag)] = np.maximum(GC_on, np.eye(p))
 
 	beta = np.random.normal(loc = 0, scale = sd_beta, size = (p, p * lag))
 	beta[(beta < min_effect) & (beta > 0)] = min_effect
@@ -266,18 +266,20 @@ def standardized_long_lag_var_model(sparsity, p, beta_value, sd_e, N, lag = 20, 
 	min_effect = 1
 
 	# Determine dependencies
+	GC_on = np.zeros((p, p))
 	num_nonzero = int(p * sparsity) - 1
 	for i in range(p):
 		choice = np.random.choice(p - 1, size = num_nonzero, replace = False)
 		choice[choice >= i] += 1
-		beta[i, choice] = beta_value
 		GC_on[i, choice] = 1
 
 	# Determine full beta
 	GC_lag = np.zeros((p, p * lag))
 	if mixed:
 		GC_lag[:, range(0, p)] = np.eye(p)
-	GC_lag[:, range(p * (lag - 1), p * lag)] = GC_on
+		GC_lag[:, range(p * (lag - 1), p * lag)] = GC_on
+	else:
+		GC_lag[:, range(p * (lag - 1), p * lag)] = np.maximum(GC_on, np.eye(p))
 
 	beta = beta_value * GC_lag
 
@@ -296,9 +298,6 @@ def standardized_long_lag_var_model(sparsity, p, beta_value, sd_e, N, lag = 20, 
 
 def hmm_model(p, N, num_states = 3, sd_e = 0.1, sparsity = 0.2, tau = 2, seed = 321, standardized = True):
 	np.random.seed(seed)
-	
-	Z_sig = 0.3
-	Z = np.zeros((p, p, num_states, num_states))
 
 	# Determine dependencies
 	if standardized:
@@ -320,6 +319,9 @@ def hmm_model(p, N, num_states = 3, sd_e = 0.1, sparsity = 0.2, tau = 2, seed = 
 				Z[i,j,:,:] = Z_sig * np.random.randn(num_states,num_states)
 
     # Generate state sequence
+	Z_sig = 0.3
+	Z = np.zeros((p, p, num_states, num_states))
+
 	L = np.zeros((N,p)).astype(int)
 	for t in range(1,N):
 		for i in range(p):
