@@ -40,7 +40,7 @@ def run_bigvar(Y, p, struct, nlambdas=10, lamratio=10., T1=0, T2=None,
 
         Returns:
 
-        coefs : d x d*p x nlambdas, ndarray
+        coefs : nlambdas x d x d*p, ndarray
             coefficient array
         lambdas : nlambda ndarray
             lambda values
@@ -81,11 +81,11 @@ def run_bigvar(Y, p, struct, nlambdas=10, lamratio=10., T1=0, T2=None,
 
     model_res = rbigvar.BigVAR_est(model)
 
-    intercept = None
     coefs = np.array(model_res[0])
-    if use_intercept:
-        intercept = np.squeeze(coefs[:, 0, :])
-        coefs = coefs[:, 1:, :]
+    coefs = np.transpose(coefs, (2,0,1))
+    intercept = np.squeeze(coefs[:, :, 0])
+    coefs = coefs[:, :, 1:]
+
     lambdas = np.array(model_res[1])
 
     return coefs, lambdas, intercept
