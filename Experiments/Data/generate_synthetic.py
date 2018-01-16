@@ -61,7 +61,7 @@ def Kuramoto(y, t, omega, A, K):
 		dydt[i] = omega[i]
 		base = 0
 		for j in range(p):
-			base += A[i,j] * np.sin(y[i] - y[j])
+			base += A[i,j] * np.sin(y[j] - y[i])
 		dydt[i] += (K/p) * base
 	return dydt
 
@@ -341,17 +341,18 @@ def hmm_model(p, N, num_states = 3, sd_e = 0.1, sparsity = 0.2, tau = 2, seed = 
 	return X, L, GC_on
 
 if __name__ == "__main__": 
-	#import matplotlib.pyplot as plt
+	import matplotlib.pyplot as plt
 	#z,GC = lorentz_96_model_2(5,10,100,.1,.1)
 	#plt.plot(z[:, 0], 'b', label='theta(t)')
 	#plt.plot(z[:, 1], 'g', label='omega(t)')
 	#plt.show()
-	#sparsity = .1
-	#p = 10
-	#z, GC = kuramoto_model(sparsity, p,N=250,delta_t = .1, sd=.1,noise_add='global',seed = 543)
-	#plt.plot(z[:, 0,:], 'b', label='theta(t)')
-	#plt.plot(z[:, 0,1], 'g', label='omega(t)')
-	#plt.show()
+	sparsity = 1
+	p = 2
+
+	z, GC = kuramoto_model(sparsity, p,N=25000,delta_t = .001, sd=.1, seed=23)
+	plt.plot(z[:, 0,0], 'b', label='theta(t)')
+	plt.plot(z[:, 0,1], 'g', label='omega(t)')
+	plt.show()
 
 	#X,L,GC_on = hmm_model(10, 200)
 
