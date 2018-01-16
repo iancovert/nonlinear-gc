@@ -79,7 +79,7 @@ outputs:
 Z - a #time points x # replicates x size (p) of series tensor
 GC - size (p) x size (p) graph of directed interactions
 """
-def kuramoto_model(sparsity, p, K = 2, N = 250, delta_t = 0.1, sd = 2.5, seed = 345, num_trials = 100, standardized = True, cos_transform = True):
+def kuramoto_model(sparsity, p, K = 2, N = 250, delta_t = 0.1, sd = 0.1, seed = 345, num_trials = 100, standardized = True, cos_transform = True):
 	np.random.seed(seed)
 
 	# Determine dependencies
