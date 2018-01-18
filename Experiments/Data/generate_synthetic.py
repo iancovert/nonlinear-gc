@@ -3,45 +3,6 @@ import numpy as np
 from scipy.special import logsumexp
 from scipy.integrate import odeint
 
-"""
-input:
-GC_true - pxp binary matrix 
-GC_est - mxpxp tensor of binary matrices. (ordered from least to most sparse)
-thresh - double, value to threshold the GC_est to determine connections
-self_con - boolean, to count self connections or not
-
-output:
-FP - length m False positive rate vector 
-TP - length m True positive rate vector
-auc - area under the ROC curve
-"""
-
-def compute_AUC(GC_true,GC_est,thresh,self_con=True):
-	m = GC_est.shape[0]
-	p = GC_est.shape[1]
-	GC_est[GC_est < thresh] = 0
-	GC_est[GC_est >= thresh] = 1
-	FP_rate = np.zeros(m)
-	TP_rate = np.zeros(m)
-	if (not self_con):
-		GC_true = np.maximum(GC_true,2*np.eye(p))
-		for i in range(m):
-			GC_est[m,:,:] = np.maximum(GC_est[m,:,:],2*np.eye(p))
-
-	for i in range(m):
-		FP = sum(sum((GC_est[i,:,:] == 1)*(GC_true == 0)))
-		N = sum(sum(GC_true == 0))
-		FP_rate[i] = FP/N
-
-		TP = sum(sum((GC_est[i,:,:] == 1)*(GC_true == 1)))
-		P = sum(sum(GC_true == 1))
-		TP_rate[i] = TP/P
-		
-	FP_rate = [0,FP_rate,1]
-	TP_rate = [0,TP_rate,1]
-
-	return TP_rate, FP_rate, np.trapz(TP_rate,FP_rate)
-
 def lorentz_96(y, t, force, b):
 	p = y.shape[0]
 	dydt = np.zeros(y.shape[0])
