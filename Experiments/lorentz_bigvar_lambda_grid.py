@@ -9,7 +9,7 @@ import pickle
 import sys
 
 # Data modules
-from Data.generate_synthetic import standardized_var_model
+from Data.generate_synthetic import lorentz_96_model2
 from Data.data_processing import format_ts_data, normalize
 
 # Model modules
@@ -26,14 +26,10 @@ parser.add_argument('--seed', type=int, default=12345, help='seed')
 parser.add_argument('--model_lag', type=int, default=5,
                     help='lag of BigVAR model')
 
-parser.add_argument('--sparsity', type=float, default=0.3,
-                    help='sparsity of time series')
 parser.add_argument('--p', type=int, default=10,
                     help='dimensionality of time series')
 parser.add_argument('--T', type=int, default=500,
                     help='length of time series')
-parser.add_argument('--lag', type=int, default=1,
-                    help='lag in simulated VAR model')
 args = parser.parse_args()
 
 # Prepare filename
@@ -54,7 +50,7 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # generate and prepare data
-X, _, GC = standardized_var_model(args.sparsity, args.p, 5, 1.0, args.T + 1, args.lag)
+X, GC = lorentz_96_model2_2(8, args.p, args.T + 1)
 X = normalize(X)
 
 coefs, lambdas, _ = run_bigvar(X, args.model_lag, 'HVARELEM',
@@ -77,8 +73,8 @@ experiment_params = {'seed': args.seed,
                      'lamratio': args.lamratio, 'model_lag': args.model_lag,
                      'lambdas': lambdas
                     }
-data_params = {'sparsity': args.sparsity, 'p': args.p, 'T': args.T,
-               'lag': args.lag, 'GC_true': GC
+data_params = {'p': args.p, 'T': args.T,
+               'GC_true': GC
               }
 best_results = {'GC_est': GC_est}
 

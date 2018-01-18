@@ -9,7 +9,7 @@ import pickle
 import sys
 
 # Data modules
-from Data.generate_synthetic import standardized_var_model
+from Data.generate_synthetic import hmm_model
 from Data.data_processing import format_ts_data, normalize
 
 # Model modules
@@ -26,14 +26,14 @@ parser.add_argument('--seed', type=int, default=12345, help='seed')
 parser.add_argument('--model_lag', type=int, default=5,
                     help='lag of BigVAR model')
 
-parser.add_argument('--sparsity', type=float, default=0.3,
+parser.add_argument('--sparsity', type=float, default=0.2,
                     help='sparsity of time series')
 parser.add_argument('--p', type=int, default=10,
                     help='dimensionality of time series')
 parser.add_argument('--T', type=int, default=500,
                     help='length of time series')
-parser.add_argument('--lag', type=int, default=1,
-                    help='lag in simulated VAR model')
+parser.add_argument('--states', type=int, default=3,
+                    help='number of HMM states')
 args = parser.parse_args()
 
 # Prepare filename
@@ -54,7 +54,7 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # generate and prepare data
-X, _, GC = standardized_var_model(args.sparsity, args.p, 5, 1.0, args.T + 1, args.lag)
+X, _, GC = hmm_model(args.p, args.T + 1, args.states, sparsity = args.sparsity, standardized = True)
 X = normalize(X)
 
 coefs, lambdas, _ = run_bigvar(X, args.model_lag, 'HVARELEM',
@@ -78,7 +78,7 @@ experiment_params = {'seed': args.seed,
                      'lambdas': lambdas
                     }
 data_params = {'sparsity': args.sparsity, 'p': args.p, 'T': args.T,
-               'lag': args.lag, 'GC_true': GC
+               'states': args.states, 'GC_true': GC
               }
 best_results = {'GC_est': GC_est}
 
