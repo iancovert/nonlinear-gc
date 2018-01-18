@@ -73,8 +73,9 @@ coef_tnsrs = np.array(coef_tnsrs)
 
 GC_est = (np.max(np.abs(coef_tnsrs), axis=-1) > 0.).astype(int)
 
-experiment_params = {'seed': args.seed, 'nlambdas': args.nlambdas,
+experiment_params = {'seed': args.seed,
                      'lamratio': args.lamratio, 'model_lag': args.model_lag,
+                     'lambdas': lambdas
                     }
 data_params = {'sparsity': args.sparsity, 'p': args.p, 'T': args.T,
                'lag': args.lag, 'GC_true': GC
