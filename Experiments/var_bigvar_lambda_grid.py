@@ -18,9 +18,9 @@ from bigvar import run_bigvar
 
 # Parse command line arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('--nlambdas', type=int, default=10,
+parser.add_argument('--nlambdas', type=int, default=50,
                     help='number of lambda values in grid')
-parser.add_argument('--lamratio', type=float, default=10.,
+parser.add_argument('--lamratio', type=float, default=1000.,
                     help='ratio of largest lambda in grid to smallest')
 parser.add_argument('--seed', type=int, default=12345, help='seed')
 parser.add_argument('--model_lag', type=int, default=5,
