@@ -9,7 +9,7 @@ import pickle
 import sys
 
 # Data modules
-from Data.generate_synthetic import standardized_var_model
+from Data.generate_synthetic import hmm_model
 from Data.data_processing import format_ts_data, normalize
 
 # Model modules
@@ -23,26 +23,26 @@ parser.add_argument('--nlambdas', type=int, default=50,
 parser.add_argument('--lamratio', type=float, default=1000.,
                     help='ratio of largest lambda in grid to smallest')
 parser.add_argument('--seed', type=int, default=12345, help='seed')
-parser.add_argument('--model_lag', type=int, default=5,
+parser.add_argument('--model_lag', type=int, default=10,
                     help='lag of BigVAR model')
 
-parser.add_argument('--sparsity', type=float, default=0.3,
+parser.add_argument('--sparsity', type=float, default=0.2,
                     help='sparsity of time series')
 parser.add_argument('--p', type=int, default=10,
                     help='dimensionality of time series')
 parser.add_argument('--T', type=int, default=500,
                     help='length of time series')
-parser.add_argument('--lag', type=int, default=1,
-                    help='lag in simulated VAR model')
+parser.add_argument('--states', type=int, default=3,
+                    help='number of HMM states')
 args = parser.parse_args()
 
 # Prepare filename
-experiment_base = 'VAR BigVAR'
+experiment_base = 'HMM MLP Encoding'
 results_dir = 'Results/' + experiment_base
 
 experiment_name = results_dir + '/expt'
 experiment_name += '_nlambdas=%d_lamratio=%e_seed=%d_model-lag=%d' % (args.nlambdas, args.lamratio, args.seed, args.model_lag)
-experiment_name += '_spars=%e_p=%d_T=%d_lag=%d.out' % (args.sparsity, args.p, args.T, args.lag) 
+experiment_name += '_spars=%e_p=%d_T=%d_states=%d.out' % (args.sparsity, args.p, args.T, args.states) 
 
 # Create directory, if necessary
 if not os.path.exists(results_dir):
@@ -54,7 +54,7 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # generate and prepare data
-X, _, GC = standardized_var_model(args.sparsity, args.p, 5, 1.0, args.T + 1, args.lag)
+X, _, GC = hmm_model(args.p, args.T + 1, args.states, sparsity = args.sparsity, standardized = True)
 X = normalize(X)
 
 coefs, lambdas, _ = run_bigvar(X, args.model_lag, 'HVARELEM',
@@ -78,7 +78,7 @@ experiment_params = {'seed': args.seed,
                      'lambdas': lambdas
                     }
 data_params = {'sparsity': args.sparsity, 'p': args.p, 'T': args.T,
-               'lag': args.lag, 'GC_true': GC
+               'states': args.states, 'GC_true': GC
               }
 best_results = {'GC_est': GC_est}
 

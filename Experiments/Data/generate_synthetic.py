@@ -3,45 +3,6 @@ import numpy as np
 from scipy.special import logsumexp
 from scipy.integrate import odeint
 
-"""
-input:
-GC_true - pxp binary matrix 
-GC_est - mxpxp tensor of binary matrices. (ordered from least to most sparse)
-thresh - double, value to threshold the GC_est to determine connections
-self_con - boolean, to count self connections or not
-
-output:
-FP - length m False positive rate vector 
-TP - length m True positive rate vector
-auc - area under the ROC curve
-"""
-
-def compute_AUC(GC_true,GC_est,thresh,self_con=True):
-	m = GC_est.shape[0]
-	p = GC_est.shape[1]
-	GC_est[GC_est < thresh] = 0
-	GC_est[GC_est >= thresh] = 1
-	FP_rate = np.zeros(m)
-	TP_rate = np.zeros(m)
-	if (not self_con):
-		GC_true = np.maximum(GC_true,2*np.eye(p))
-		for i in range(m):
-			GC_est[m,:,:] = np.maximum(GC_est[m,:,:],2*np.eye(p))
-
-	for i in range(m):
-		FP = sum(sum((GC_est[i,:,:] == 1)*(GC_true == 0)))
-		N = sum(sum(GC_true == 0))
-		FP_rate[i] = FP/N
-
-		TP = sum(sum((GC_est[i,:,:] == 1)*(GC_true == 1)))
-		P = sum(sum(GC_true == 1))
-		TP_rate[i] = TP/P
-		
-	FP_rate = [0,FP_rate,1]
-	TP_rate = [0,TP_rate,1]
-
-	return TP_rate, FP_rate, np.trapz(TP_rate,FP_rate)
-
 def lorentz_96(y, t, force, b):
 	p = y.shape[0]
 	dydt = np.zeros(y.shape[0])
@@ -79,7 +40,7 @@ outputs:
 Z - a #time points x # replicates x size (p) of series tensor
 GC - size (p) x size (p) graph of directed interactions
 """
-def kuramoto_model(sparsity, p, K = 2, N = 250, delta_t = 0.1, sd = 2.5, seed = 345, num_trials = 100, standardized = True, cos_transform = True):
+def kuramoto_model(sparsity, p, K = 2, N = 250, delta_t = 0.1, sd = 0.1, seed = 345, num_trials = 100, standardized = True, cos_transform = True):
 	np.random.seed(seed)
 
 	# Determine dependencies
@@ -236,10 +197,16 @@ def long_lag_var_model(sparsity, p, sd_beta, sd_e, N, lag = 20, seed = 765, mixe
 	GC_on = np.random.binomial(n = 1, p = sparsity, size = (p, p))
 	GC_lag = np.zeros((p, p * lag))
 	if mixed:
-		GC_lag[:, range(0, p)] = np.eye(p)
-		GC_lag[:, range(p * (lag - 1), p * lag)] = GC_on
+		GC_lag[:, range(p * (lag - 1), p * lag)] = np.eye(p)
+		GC_lag[:, range(p)] = GC_on
 	else:
-		GC_lag[:, range(p * (lag - 1), p * lag)] = np.maximum(GC_on, np.eye(p))
+		GC_lag[:, range(p)] = np.maximum(GC_on, np.eye(p))
+
+	# if mixed:
+	# 	GC_lag[:, range(0, p)] = np.eye(p)
+	# 	GC_lag[:, range(p * (lag - 1), p * lag)] = GC_on
+	# else:
+	# 	GC_lag[:, range(p * (lag - 1), p * lag)] = np.maximum(GC_on, np.eye(p))
 
 	beta = np.random.normal(loc = 0, scale = sd_beta, size = (p, p * lag))
 	beta[(beta < min_effect) & (beta > 0)] = min_effect
@@ -276,10 +243,10 @@ def standardized_long_lag_var_model(sparsity, p, beta_value, sd_e, N, lag = 20, 
 	# Determine full beta
 	GC_lag = np.zeros((p, p * lag))
 	if mixed:
-		GC_lag[:, range(0, p)] = np.eye(p)
-		GC_lag[:, range(p * (lag - 1), p * lag)] = GC_on
+		GC_lag[:, range(p * (lag - 1), p * lag)] = np.eye(p)
+		GC_lag[:, range(p)] = GC_on
 	else:
-		GC_lag[:, range(p * (lag - 1), p * lag)] = np.maximum(GC_on, np.eye(p))
+		GC_lag[:, range(p)] = np.maximum(GC_on, np.eye(p))
 
 	beta = beta_value * GC_lag
 
