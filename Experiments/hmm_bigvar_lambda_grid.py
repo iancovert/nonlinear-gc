@@ -18,12 +18,12 @@ from bigvar import run_bigvar
 
 # Parse command line arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('--nlambdas', type=int, default=10,
+parser.add_argument('--nlambdas', type=int, default=50,
                     help='number of lambda values in grid')
-parser.add_argument('--lamratio', type=float, default=10.,
+parser.add_argument('--lamratio', type=float, default=1000.,
                     help='ratio of largest lambda in grid to smallest')
 parser.add_argument('--seed', type=int, default=12345, help='seed')
-parser.add_argument('--model_lag', type=int, default=5,
+parser.add_argument('--model_lag', type=int, default=10,
                     help='lag of BigVAR model')
 
 parser.add_argument('--sparsity', type=float, default=0.2,
@@ -37,12 +37,12 @@ parser.add_argument('--states', type=int, default=3,
 args = parser.parse_args()
 
 # Prepare filename
-experiment_base = 'VAR BigVAR'
+experiment_base = 'HMM MLP Encoding'
 results_dir = 'Results/' + experiment_base
 
 experiment_name = results_dir + '/expt'
 experiment_name += '_nlambdas=%d_lamratio=%e_seed=%d_model-lag=%d' % (args.nlambdas, args.lamratio, args.seed, args.model_lag)
-experiment_name += '_spars=%e_p=%d_T=%d_lag=%d.out' % (args.sparsity, args.p, args.T, args.lag) 
+experiment_name += '_spars=%e_p=%d_T=%d_states=%d.out' % (args.sparsity, args.p, args.T, args.states) 
 
 # Create directory, if necessary
 if not os.path.exists(results_dir):

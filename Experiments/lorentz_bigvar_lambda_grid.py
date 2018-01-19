@@ -9,7 +9,7 @@ import pickle
 import sys
 
 # Data modules
-from Data.generate_synthetic import lorentz_96_model2
+from Data.generate_synthetic import lorentz_96_model_2
 from Data.data_processing import format_ts_data, normalize
 
 # Model modules
@@ -18,9 +18,9 @@ from bigvar import run_bigvar
 
 # Parse command line arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('--nlambdas', type=int, default=10,
+parser.add_argument('--nlambdas', type=int, default=50,
                     help='number of lambda values in grid')
-parser.add_argument('--lamratio', type=float, default=10.,
+parser.add_argument('--lamratio', type=float, default=1000.,
                     help='ratio of largest lambda in grid to smallest')
 parser.add_argument('--seed', type=int, default=12345, help='seed')
 parser.add_argument('--model_lag', type=int, default=5,
@@ -33,12 +33,12 @@ parser.add_argument('--T', type=int, default=500,
 args = parser.parse_args()
 
 # Prepare filename
-experiment_base = 'VAR BigVAR'
+experiment_base = 'Lorentz MLP Encoding'
 results_dir = 'Results/' + experiment_base
 
 experiment_name = results_dir + '/expt'
 experiment_name += '_nlambdas=%d_lamratio=%e_seed=%d_model-lag=%d' % (args.nlambdas, args.lamratio, args.seed, args.model_lag)
-experiment_name += '_spars=%e_p=%d_T=%d_lag=%d.out' % (args.sparsity, args.p, args.T, args.lag) 
+experiment_name += '_p=%d_T=%d.out' % (args.p, args.T) 
 
 # Create directory, if necessary
 if not os.path.exists(results_dir):
@@ -50,7 +50,7 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # generate and prepare data
-X, GC = lorentz_96_model2_2(8, args.p, args.T + 1)
+X, GC = lorentz_96_model_2(8, args.p, args.T + 1)
 X = normalize(X)
 
 coefs, lambdas, _ = run_bigvar(X, args.model_lag, 'HVARELEM',
