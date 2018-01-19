@@ -197,10 +197,16 @@ def long_lag_var_model(sparsity, p, sd_beta, sd_e, N, lag = 20, seed = 765, mixe
 	GC_on = np.random.binomial(n = 1, p = sparsity, size = (p, p))
 	GC_lag = np.zeros((p, p * lag))
 	if mixed:
-		GC_lag[:, range(0, p)] = np.eye(p)
-		GC_lag[:, range(p * (lag - 1), p * lag)] = GC_on
+		GC_lag[:, range(p * (lag - 1), p * lag)] = np.eye(p)
+		GC_lag[:, range(p)] = GC_on
 	else:
-		GC_lag[:, range(p * (lag - 1), p * lag)] = np.maximum(GC_on, np.eye(p))
+		GC_lag[:, range(p)] = np.maximum(GC_on, np.eye(p))
+
+	# if mixed:
+	# 	GC_lag[:, range(0, p)] = np.eye(p)
+	# 	GC_lag[:, range(p * (lag - 1), p * lag)] = GC_on
+	# else:
+	# 	GC_lag[:, range(p * (lag - 1), p * lag)] = np.maximum(GC_on, np.eye(p))
 
 	beta = np.random.normal(loc = 0, scale = sd_beta, size = (p, p * lag))
 	beta[(beta < min_effect) & (beta > 0)] = min_effect
@@ -237,10 +243,10 @@ def standardized_long_lag_var_model(sparsity, p, beta_value, sd_e, N, lag = 20, 
 	# Determine full beta
 	GC_lag = np.zeros((p, p * lag))
 	if mixed:
-		GC_lag[:, range(0, p)] = np.eye(p)
-		GC_lag[:, range(p * (lag - 1), p * lag)] = GC_on
+		GC_lag[:, range(p * (lag - 1), p * lag)] = np.eye(p)
+		GC_lag[:, range(p)] = GC_on
 	else:
-		GC_lag[:, range(p * (lag - 1), p * lag)] = np.maximum(GC_on, np.eye(p))
+		GC_lag[:, range(p)] = np.maximum(GC_on, np.eye(p))
 
 	beta = beta_value * GC_lag
 

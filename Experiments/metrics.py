@@ -46,26 +46,26 @@ auc - area under the ROC curve
 def compute_AUC(GC_true, GC_list, thresh, self_con = True):
 	m = len(GC_list)
 	p = GC_list[0].shape[0]
+	thresh_list = []
 
 	for i in range(m):
-		GC_est = GC_list[i]
-		GC_est[GC_est < thresh] = 0
-		GC_est[GC_est >= thresh] = 1
-		GC_list[i] = GC_est
+		thresh_grid = np.zeros((p, p)).astype(int)
+		thresh_grid[GC_list[i] >= thresh] = 1
+		thresh_list.append(thresh_grid)
 
 	FP_rate = np.zeros(m)
 	TP_rate = np.zeros(m)
 	if not self_con:
 		GC_true = np.maximum(GC_true, 2 * np.eye(p))
 		for i in range(m):
-			GC_list[i] = np.maximum(GC_list[i], 2 * np.eye(p))
+			thresh_list[i] = np.maximum(thresh_list[i], 2 * np.eye(p))
 
 	for i in range(m):
-		FP = sum(sum((GC_list[i] == 1) * (GC_true == 0)))
+		FP = sum(sum((thresh_list[i] == 1) * (GC_true == 0)))
 		N = sum(sum(GC_true == 0))
 		FP_rate[i] = FP/N
 
-		TP = np.sum((GC_list[i] == 1)*(GC_true == 1))
+		TP = np.sum((thresh_list[i] == 1)*(GC_true == 1))
 		P = np.sum(GC_true == 1)
 		TP_rate[i] = TP/P
 	
