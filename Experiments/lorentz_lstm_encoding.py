@@ -56,7 +56,7 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # Prepare data
-X, GC = lorentz_96_model_2(8, args.p, args.T)
+X, GC = lorentz_96_model_2(8, args.p, args.T, sd = 2.0)
 X = normalize(X)
 X_train, X_val = split_data(X, validation = 0.1)
 Y_train = X_train[1:, :]

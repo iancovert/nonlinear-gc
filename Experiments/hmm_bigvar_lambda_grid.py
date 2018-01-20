@@ -28,11 +28,11 @@ parser.add_argument('--model_lag', type=int, default=10,
 
 parser.add_argument('--sparsity', type=float, default=0.2,
                     help='sparsity of time series')
-parser.add_argument('--p', type=int, default=10,
+parser.add_argument('--p', type=int, default=20,
                     help='dimensionality of time series')
-parser.add_argument('--T', type=int, default=500,
+parser.add_argument('--T', type=int, default=2000,
                     help='length of time series')
-parser.add_argument('--states', type=int, default=3,
+parser.add_argument('--states', type=int, default=5,
                     help='number of HMM states')
 args = parser.parse_args()
 
@@ -54,7 +54,7 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # generate and prepare data
-X, _, GC = hmm_model(args.p, args.T + 1, args.states, sparsity = args.sparsity, standardized = True)
+X, _, GC = hmm_model(args.p, args.T + 1, args.states, sparsity = args.sparsity, standardized = True, sd_e = 0.5)
 X = normalize(X)
 
 coefs, lambdas, _ = run_bigvar(X, args.model_lag, 'HVARELEM',

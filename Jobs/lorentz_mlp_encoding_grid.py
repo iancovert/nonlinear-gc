@@ -8,10 +8,10 @@ tstamp = time.strftime('%H%M%S')
 jobname = 'lorentz_mlp_encoding_%s_%s' % (dstamp, tstamp)
 jobfile = 'Batches/%s.job' % jobname
 
-lam_grid = np.append(np.geomspace(10.0, 0.001, num = 50), 0)
+lam_grid = np.append(np.geomspace(10.0, 0.01, num = 50), 0)
 seed_grid = [0]
 hidden_grid = [10]
-network_lag_grid = [1]
+network_lag_grid = [5]
 
 nepoch_grid = [5000]
 lr_grid = [0.01]

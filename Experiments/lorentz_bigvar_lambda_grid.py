@@ -50,7 +50,7 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # generate and prepare data
-X, GC = lorentz_96_model_2(8, args.p, args.T + 1)
+X, GC = lorentz_96_model_2(8, args.p, args.T + 1, sd = 2.0)
 X = normalize(X)
 
 coefs, lambdas, _ = run_bigvar(X, args.model_lag, 'HVARELEM',

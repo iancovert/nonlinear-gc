@@ -59,7 +59,7 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # Prepare data
-X, _, GC = hmm_model(args.p, args.T, args.states, standardized = True)
+X, _, GC = hmm_model(args.p, args.T, args.states, sparsity = args.sparsity, standardized = True, sd_e = 0.5)
 X = normalize(X)
 X_train, X_val = split_data(X, validation = 0.1)
 Y_train = X_train[1:, :]

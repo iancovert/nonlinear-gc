@@ -10,15 +10,15 @@ jobfile = 'Batches/%s.job' % jobname
 
 lam_grid = np.append(np.geomspace(10.0, 0.001, num = 50), 0)
 seed_grid = [0]
-hidden_grid = [10]
-network_lag_grid = [3]
+hidden_grid = [10, 20, 50]
+network_lag_grid = [10]
 
-nepoch_grid = [5000]
+nepoch_grid = [20000]
 
-sparsity_grid = [0.3]
-p_grid = [10]
-T_grid = [500]
-states_grid = [3]
+sparsity_grid = [0.2]
+p_grid = [20]
+T_grid = [2000]
+states_grid = [5]
 
 BASECMD = 'python hmm_mlp_encoding.py'
 
