@@ -83,9 +83,6 @@ class ParallelMLPEncoding:
 
 	def _train_builtin(self, X, Y):
 		# Compute objective
-		# loss = self._loss(X, Y)
-		# penalty = [apply_penalty(list(net.parameters())[0], self.penalty, self.n, lag = self.lag) for net in self.sequentials]
-		# total_loss = sum(loss) + self.lam * sum(penalty)
 		objective = self._objective(X, Y)
 
 		# Run optimizer
@@ -211,9 +208,6 @@ class ParallelMLPDecoding:
 		[prox_operator(list(net.parameters())[0], self.penalty, self.n, self.lr, self.lam, lag = self.series_out_size) for net in self.out_nets]
 
 	def _train_builtin(self, X, Y):
-		# loss = self._loss(X, Y)
-		# penalty = [apply_penalty(list(net.parameters())[0], self.penalty, self.n, lag = self.series_out_size) for net in self.out_nets]
-		# total_loss = sum(loss) + self.lam * sum(penalty)
 		objective = self._objective(X, Y)
 
 		# Run optimizer
