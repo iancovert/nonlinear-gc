@@ -55,7 +55,7 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # Prepare data
-X, GC = lorentz_96_model_2(8, args.p, args.T, sd = 2.0)
+X, GC = lorentz_96_model_2(8, args.p, args.T, sd = 2.5)
 X = normalize(X)
 X_train, Y_train, _, _ = format_ts_data(X, args.network_lag, validation = 0.0)
 

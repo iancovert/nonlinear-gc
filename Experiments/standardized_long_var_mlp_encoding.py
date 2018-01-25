@@ -57,7 +57,7 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # Prepare data
-X, _, GC = standardized_long_lag_var_model(args.sparsity, args.p, 5, 1.0, args.T, args.lag)
+X, _, GC = standardized_long_lag_var_model(args.sparsity, args.p, 5, 1.0, args.T, args.lag, mixed = False)
 X = normalize(X)
 X_train, Y_train, _, _ = format_ts_data(X, args.network_lag, validation = 0.0)
 
@@ -92,7 +92,8 @@ best_results = {
 	'best_nepoch': [props['nepoch'] for props in best_properties],
 	'best_objective': [props['train_objective'] for props in best_properties],
 	'predictions_train': np.concatenate([props['predictions_train'][:, np.newaxis] for props in best_properties], axis = 1),
-	'GC_est': [np.linalg.norm(np.reshape(props['weights'], newshape = (args.hidden * args.network_lag, args.p), order = 'F'), axis = 0) for props in best_properties]
+	'GC_est': [np.linalg.norm(np.reshape(props['weights'], newshape = (args.hidden * args.network_lag, args.p), order = 'F'), axis = 0) for props in best_properties],
+	'weights': [props['weights'] for props in best_properties]
 }
 
 results_dict = {

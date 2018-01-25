@@ -37,7 +37,7 @@ parser.add_argument('--states', type=int, default=5,
 args = parser.parse_args()
 
 # Prepare filename
-experiment_base = 'HMM MLP Encoding'
+experiment_base = 'HMM BigVAR'
 results_dir = 'Results/' + experiment_base
 
 experiment_name = results_dir + '/expt'

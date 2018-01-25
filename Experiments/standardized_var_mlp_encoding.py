@@ -57,14 +57,14 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # Prepare data
-X, _, GC = standardized_var_model(args.sparsity, args.p, 5, 1.0, args.T, args.lag)
+X, _, GC = standardized_var_model(args.sparsity, args.p, 5, 2.5, args.T, args.lag)
 X = normalize(X)
 X_train, Y_train, _, _ = format_ts_data(X, args.network_lag, validation = 0.0)
 
 # Get model
 if args.seed != 0:
 	torch.manual_seed(args.seed)
-model = ParallelMLPEncoding(Y_train.shape[1], Y_train.shape[1], args.network_lag, [args.hidden], args.lr, 'prox', args.lam, 'group_lasso')
+model = ParallelMLPEncoding(Y_train.shape[1], Y_train.shape[1], args.network_lag, [args.hidden], args.lr, 'prox', args.lam, 'hierarchical')
 
 # Run experiment
 train_loss, train_objective, best_properties = run_experiment(model, X_train, Y_train, args.nepoch, predictions = True, loss_check = args.loss_check, cooldown = args.cooldown.lower() == 'y')
@@ -92,7 +92,8 @@ best_results = {
 	'best_nepoch': [props['nepoch'] for props in best_properties],
 	'best_objective': [props['train_objective'] for props in best_properties],
 	'predictions_train': np.concatenate([props['predictions_train'][:, np.newaxis] for props in best_properties], axis = 1),
-	'GC_est': [np.linalg.norm(np.reshape(props['weights'], newshape = (args.hidden * args.network_lag, args.p), order = 'F'), axis = 0) for props in best_properties]
+	'GC_est': [np.linalg.norm(np.reshape(props['weights'], newshape = (args.hidden * args.network_lag, args.p), order = 'F'), axis = 0) for props in best_properties],
+	'weights': [props['weights'] for props in best_properties]
 }
 
 results_dict = {

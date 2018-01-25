@@ -59,7 +59,7 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # Prepare data
-X, _, GC = standardized_long_lag_var_model(args.sparsity, args.p, 5, 1.0, args.T, args.lag)
+X, _, GC = standardized_long_lag_var_model(args.sparsity, args.p, 5, 1.0, args.T, args.lag, mixed = False)
 X = normalize(X)
 X_train, X_val = split_data(X, validation = 0.1)
 Y_train = X_train[1:, :]

@@ -28,7 +28,7 @@ parser.add_argument('--model_lag', type=int, default=5,
 
 parser.add_argument('--sparsity', type=float, default=0.3,
                     help='sparsity of time series')
-parser.add_argument('--p', type=int, default=10,
+parser.add_argument('--p', type=int, default=20,
                     help='dimensionality of time series')
 parser.add_argument('--T', type=int, default=500,
                     help='length of time series')
@@ -54,7 +54,7 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # generate and prepare data
-X, _, GC = standardized_var_model(args.sparsity, args.p, 5, 1.0, args.T + 1, args.lag)
+X, _, GC = standardized_var_model(args.sparsity, args.p, 5, 2.5, args.T + 1, args.lag)
 X = normalize(X)
 
 coefs, lambdas, _ = run_bigvar(X, args.model_lag, 'HVARELEM',

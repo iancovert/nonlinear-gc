@@ -26,14 +26,14 @@ parser.add_argument('--seed', type=int, default=12345, help='seed')
 parser.add_argument('--model_lag', type=int, default=5,
                     help='lag of BigVAR model')
 
-parser.add_argument('--p', type=int, default=10,
+parser.add_argument('--p', type=int, default=20,
                     help='dimensionality of time series')
 parser.add_argument('--T', type=int, default=500,
                     help='length of time series')
 args = parser.parse_args()
 
 # Prepare filename
-experiment_base = 'Lorentz MLP Encoding'
+experiment_base = 'Lorentz BigVAR'
 results_dir = 'Results/' + experiment_base
 
 experiment_name = results_dir + '/expt'
@@ -50,7 +50,7 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # generate and prepare data
-X, GC = lorentz_96_model_2(8, args.p, args.T + 1, sd = 2.0)
+X, GC = lorentz_96_model_2(8, args.p, args.T + 1, sd = 2.5)
 X = normalize(X)
 
 coefs, lambdas, _ = run_bigvar(X, args.model_lag, 'HVARELEM',
