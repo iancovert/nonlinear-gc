@@ -90,6 +90,17 @@ def whiten_data_cholesky(X):
 
 	return np.dot(X_centered, L_inv.T)
 
+def normalize_list(X,type="cat"):
+    if (type == "cat"):
+        Xd = np.concatenate(X)
+        stds = np.std(Xd,axis = 0)
+        means = Xd.matrix.mean(axis=0)
+    
+        for (i in range(nl))
+            X[i] = (X[i] - means)/stds
+
+    return(X)
+
 def normalize(X, scale_global = False):
 	if len(X.shape) == 2:
 		X_centered = X - np.mean(X, axis = 0)
