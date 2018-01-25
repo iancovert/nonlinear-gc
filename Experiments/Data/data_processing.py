@@ -96,7 +96,7 @@ def normalize_list(X,type="cat"):
         stds = np.std(Xd,axis = 0)
         means = Xd.matrix.mean(axis=0)
     
-        for (i in range(nl))
+        for i in range(nl):
             X[i] = (X[i] - means)/stds
 
     return(X)
