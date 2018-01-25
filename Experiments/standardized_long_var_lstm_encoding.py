@@ -61,19 +61,16 @@ if os.path.isfile(experiment_name):
 # Prepare data
 X, _, GC = standardized_long_lag_var_model(args.sparsity, args.p, 5, 1.0, args.T, args.lag, mixed = False)
 X = normalize(X)
-X_train, X_val = split_data(X, validation = 0.1)
-Y_train = X_train[1:, :]
-X_train = X_train[:-1, :]
-Y_val = X_val[1:, :]
-X_val = X_val[:-1, :]
+Y_train = X[1:, :]
+X_train = X[:-1, :]
 
 # Get model
 if args.seed != 0:
 	torch.manual_seed(args.seed)
-model = ParallelLSTMEncoding(Y_val.shape[1], Y_val.shape[1], args.hidden, 1, args.lr, 'prox', args.lam)
+model = ParallelLSTMEncoding(Y_train.shape[1], Y_train.shape[1], args.hidden, 1, args.lr, 'prox', args.lam)
 
 # Run experiment
-train_loss, val_loss, best_properties = run_recurrent_experiment(model, X_train, Y_train, 
+train_loss, train_objective, best_properties = run_recurrent_experiment(model, X_train, Y_train, 
 	args.nepoch, window_size = args.window, stride_size = args.stride, truncation = args.truncation, predictions = True, loss_check = args.loss_check, cooldown = args.cooldown.lower() == 'y')
 
 # Format results

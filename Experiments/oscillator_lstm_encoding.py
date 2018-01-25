@@ -9,7 +9,7 @@ import shutil
 import sys
 
 # Data modules
-from Data.DREAM_preprocess import import_DREAM
+from Data.generate_synthetic import kuramoto_model
 from Data.data_processing import split_data, normalize
 
 # Model modules
@@ -28,9 +28,10 @@ parser.add_argument('--nepoch', type = int, default = 1000, help = 'number of tr
 parser.add_argument('--lr', type = float, default = 0.001, help = 'learning rate')
 parser.add_argument('--cooldown', type = str, default = 'N', help = 'learning rate cooldown')
 
-parser.add_argument('--size', type = int, default = 50, help = 'size of Dream network')
-parser.add_argument('--type', type = str, default = 'Ecoli', help = 'Dream network type')
-parser.add_argument('--number', type = int, default = 1, help = 'Dream dataset number')
+parser.add_argument('--sparsity', type = float, default = 0.3, help = 'sparsity of time series')
+parser.add_argument('--p', type = int, default = 10, help = 'dimensionality of time series')
+parser.add_argument('--T', type = int, default = 250, help = 'length of time series')
+parser.add_argument('--trials', type = int, default = 10, help = 'number of replicates')
 
 parser.add_argument('--window', type = int, default = 20, help = 'size of sliding windows for splitting training data')
 parser.add_argument('--stride', type = int, default = 10, help = 'size of stride of sliding windows for splitting training data')
@@ -40,13 +41,13 @@ parser.add_argument('--loss_check', type = int, default = 10, help = 'interval f
 args = parser.parse_args()
 
 # Prepare filename
-experiment_base = 'DREAM LSTM Encoding'
+experiment_base = 'Oscillator LSTM Encoding'
 results_dir = 'Results/' + experiment_base
 
 experiment_name = results_dir + '/expt'
 experiment_name += '_nepoch=%d_lr=%e_cooldown=%s' % (args.nepoch, args.lr, args.cooldown)
 experiment_name += '_lam=%e_seed=%d_hidden=%d' % (args.lam, args.seed, args.hidden)
-experiment_name += '_size=%d_type=%s_number=%d.out' % (args.size, args.type, args.number)
+experiment_name += '_spars=%e_p=%d_T=%d_trials=%d.out' % (args.sparsity, args.p, args.T, args.trials)
 
 # Create directory, if necessary
 if not os.path.exists(results_dir):
@@ -58,7 +59,7 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # Prepare data
-X, GC = import_DREAM(size = args.size, network_type = args.type, number = args.number)
+X, GC = kuramoto_model(args.sparsity, args.p, num_trials = args.trials, N = args.T, standardized = True)
 X = normalize(X)
 Y_train = X[1:, :]
 X_train = X[:-1, :]
@@ -83,9 +84,10 @@ experiment_params = {
 }
 
 data_params = {
-	'size': args.size,
-	'type': args.type,
-	'number': args.number,
+	'sparsity': args.sparsity,
+	'p': args.p,
+	'T': args.T,
+	'trials': args.trials,
 	'GC_true': GC
 }
 
