@@ -43,7 +43,7 @@ class ParallelMLPEncoding:
 		self.opt = opt
 
 		if opt == 'prox':
-			self.optimizers = [optim.SGD(list(net.parameters()), lr = lr, momentum = 0.9) for net in self.sequentials]
+			self.optimizers = [optim.SGD(list(net.parameters()), lr = lr, momentum = 0.0) for net in self.sequentials]
 			self.train = self._train_prox
 
 		else:
@@ -60,7 +60,7 @@ class ParallelMLPEncoding:
 
 	def cooldown(self, p):
 		self.lr[p] *= self.lr_decay
-		if self.opt == 'prox' or self.opt == 'momentum':
+		if self.opt == 'momentum':
 			self.optimizers[p] = optim.SGD(list(self.sequentials[p].parameters()), lr = self.lr[p], momentum = 0.9)
 		elif self.opt == 'adam':
 			self.optimizers[p] = optim.Adam(list(self.sequentials[p].parameters()), lr = self.lr[p])
@@ -79,7 +79,7 @@ class ParallelMLPEncoding:
 		[optimizer.step() for optimizer in self.optimizers]
 
 		# Apply prox operator
-		[prox_operator(list(net.parameters())[0], self.penalty, self.n, self.lr, self.lam, lag = self.lag) for net in self.sequentials]
+		[prox_operator(list(net.parameters())[0], self.penalty, self.n, lr, self.lam, lag = self.lag) for (net, lr) in zip(self.sequentials, self.lr)]
 
 	def _train_builtin(self, X, Y):
 		# Compute objective
@@ -115,9 +115,9 @@ class ParallelMLPEncoding:
 
 	def get_weights(self, p = None):
 		if p is None:
-			return [list(net.parameters())[0].data.numpy() for net in self.sequentials]
+			return [list(net.parameters())[0].data.numpy().copy() for net in self.sequentials]
 		else:
-			return list(self.sequentials[p].parameters())[0].data.numpy()
+			return list(self.sequentials[p].parameters())[0].data.numpy().copy()
 
 	def predict(self, X):
 		Y_pred = self._forward(X)
@@ -179,7 +179,7 @@ class ParallelMLPDecoding:
 			param_list = param_list + list(net.parameters())
 		
 		if opt == 'prox':
-			self.optimizer = optim.SGD(param_list, lr = lr, momentum = 0.9)
+			self.optimizer = optim.SGD(param_list, lr = lr, momentum = 0.0)
 			self.train = self._train_prox
 
 		else:
@@ -241,8 +241,11 @@ class ParallelMLPDecoding:
 		objective = self._objective(X, Y)
 		return np.array([num.data[0] for num in objective])
 
-	def get_weights(self):
-		return [list(net.parameters())[0].data.numpy() for net in self.out_nets]
+	def get_weights(self, p = None):
+		if p is None:
+			return [list(net.parameters())[0].data.numpy().copy() for net in self.out_nets]
+		else:
+			return list(self.out_nets[p].parameters())[0].data.numpy().copy()
 
 	def predict(self, X):
 		Y_pred = self._forward(X)

@@ -31,7 +31,7 @@ class ParallelLSTMEncoding:
 		self.opt = opt
 
 		if opt == 'prox':
-			self.optimizers = [optim.SGD(list(lstm.parameters()) + list(out.parameters()), lr = lr, momentum = 0.9) for lstm, out in zip(self.lstms, self.out_layers)]
+			self.optimizers = [optim.SGD(list(lstm.parameters()) + list(out.parameters()), lr = lr, momentum = 0.0) for lstm, out in zip(self.lstms, self.out_layers)]
 			self.train = self._train_prox
 
 		else:
@@ -48,7 +48,7 @@ class ParallelLSTMEncoding:
 
 	def cooldown(self, p):
 		self.lr[p] *= self.lr_decay
-		if self.opt == 'prox' or self.opt == 'momentum':
+		if self.opt == 'momentum':
 			self.optimizers[p] = optim.SGD(list(self.lstms[p].parameters()) + list(self.out_layers[p].parameters()), lr = self.lr[p], momentum = 0.9)
 		elif self.opt == 'adam':
 			self.optimizers[p] = optim.Adam(list(self.lstms[p].parameters()) + list(self.out_layers[p].parameters()), lr = self.lr[p])
@@ -150,7 +150,7 @@ class ParallelLSTMEncoding:
 		[optimizer.step() for optimizer in self.optimizers]
 
 		# Apply proximal operator
-		[prox_operator(lstm.weight_ih_l0, 'group_lasso', self.input_series, self.lr, self.lam) for lstm in self.lstms]
+		[prox_operator(lstm.weight_ih_l0, 'group_lasso', self.input_series, lr, self.lam) for (lstm, lr) in zip(self.lstms, self.lr)]
 
 		if return_hidden:
 			return hidden
@@ -181,9 +181,9 @@ class ParallelLSTMEncoding:
 
 	def get_weights(self, p = None):
 		if p is None:
-			return [lstm.weight_ih_l0.data.numpy() for lstm in self.lstms]
+			return [lstm.weight_ih_l0.data.numpy().copy() for lstm in self.lstms]
 		else:
-			return self.lstms[p].weight_ih_l0.data.numpy()
+			return self.lstms[p].weight_ih_l0.data.numpy().copy()
 
 class ParallelLSTMDecoding:
 	def __init__(self, input_series, output_series, hidden_size, hidden_layers, fc_units, lr, opt, lam, nonlinearity = 'relu'):
@@ -221,7 +221,7 @@ class ParallelLSTMDecoding:
 			param_list = param_list + list(net.parameters())
 
 		if opt == 'prox':
-			self.optimizer = optim.SGD(param_list, lr = lr, momentum = 0.9)
+			self.optimizer = optim.SGD(param_list, lr = lr, momentum = 0.0)
 			self.train = self._train_prox
 		else:
 			if opt == 'adam':
@@ -346,8 +346,11 @@ class ParallelLSTMDecoding:
 		objective = self._objective(X, Y)
 		return np.array([num.data[0] for num in objective])
 
-	def get_weights(self):
-		return [list(net.parameters())[0].data.numpy() for net in self.out_networks]
+	def get_weights(self, p = None):
+		if p is None:
+			return [list(net.parameters())[0].data.numpy().copy() for net in self.out_networks]
+		else:
+			return list(self.out_networks[p].parameters())[0].data.numpy().copy()
 
 
 def repackage_hidden(hidden):

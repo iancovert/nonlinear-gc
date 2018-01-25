@@ -49,7 +49,7 @@ def run_experiment(model, X_train, Y_train, nepoch, mbsize = None, verbose = Tru
 			model.train(X_train, Y_train)
 
 		# Check progress
-		if epoch % loss_check == 0:
+		if (epoch + 1) % loss_check == 0:
 			# Save results
 			train_loss[counter, :] = model.calculate_loss(X_train, Y_train)
 			train_objective[counter, :] = model.calculate_objective(X_train, Y_train)
