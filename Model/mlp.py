@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.autograd import Variable
-
+import copy
 import numpy as np
 from itertools import chain
 
@@ -56,7 +56,12 @@ class ParallelMLPEncoding:
 			else:
 				raise ValueError('opt must be a valid option')
 
-			self.train = self._train_builtin
+			#self.train = self._train_builtin
+			self.train = self._train_prox_line
+
+
+
+
 
 	def cooldown(self, p):
 		self.lr[p] *= self.lr_decay
@@ -68,6 +73,49 @@ class ParallelMLPEncoding:
 			self.optimizers[p] = optim.Adam(list(self.sequentials[p].parameters()), lr = self.lr[p])
 		else:
 			self.optimizers[p] = optim.SGD(list(self.sequentials[p].parameters()), lr = self.lr[p])
+
+
+	def _train_prox_line(self,X,Y):
+		loss = self._loss(X, Y)
+		total_loss = sum(loss)
+
+		total_loss_orig = total_loss
+
+		for net in self.sequentials:
+			net.zero_grad()
+
+		total_loss.backward()
+
+		t = .9
+		s = .8
+		min_lr = 1e-16
+
+		for target, net in enumerate(self.sequentials):
+			lr = .01
+			new_net = copy.deep_copy(net)
+			while lr > min_lr:
+				for params, o_params in zip(new_net.parameters(), net.parameters()):
+					params.data = o_params.data - o_params.grad.data*lr)
+				
+				prox_operator(list(new_net.parameters())[0], self.penalty, self.n, lr, self.lam, lag = self.lag)
+
+
+				X_var = Variable(torch.from_numpy(X).float())
+				Y_pred = new_net(X_var)
+				Y_var = Variable(torch.from_numpy(Y[:, target][:, np.newaxis]).float())
+				new_loss = self.loss_fn(Y_pred[target], Y_var[target])
+				
+				diff_squared = 0
+				for params, o_params in zip(new_net.parameters(), net.parameters()):
+					diff_squared += torch.sum((o_params.data - params.data)**2)
+
+				if new_loss <= loss[target] - t*lr*diff_squared:
+					break;
+				else:
+					lr *= s
+
+
+
 
 	def _train_prox(self, X, Y):
 		# Compute total loss
@@ -196,6 +244,13 @@ class ParallelMLPDecoding:
 
 			self.train = self._train_builtin
 
+
+
+
+
+
+
+
 	def _train_prox(self, X, Y):
 		loss = self._loss(X, Y)
 		total_loss = sum(loss)
@@ -204,6 +259,9 @@ class ParallelMLPDecoding:
 		[net.zero_grad() for net in chain(self.series_nets, self.out_nets)]
 
 		total_loss.backward()
+
+
+
 		self.optimizer.step()
 
 		# Apply prox operator
