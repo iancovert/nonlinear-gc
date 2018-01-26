@@ -60,7 +60,9 @@ class ParallelMLPEncoding:
 
 	def cooldown(self, p):
 		self.lr[p] *= self.lr_decay
-		if self.opt == 'momentum':
+		if self.opt == 'prox':
+			self.optimizers[p] = optim.SGD(list(self.sequentials[p].parameters()), lr = self.lr[p], momentum = 0.0)
+		elif self.opt == 'momentum':
 			self.optimizers[p] = optim.SGD(list(self.sequentials[p].parameters()), lr = self.lr[p], momentum = 0.9)
 		elif self.opt == 'adam':
 			self.optimizers[p] = optim.Adam(list(self.sequentials[p].parameters()), lr = self.lr[p])
