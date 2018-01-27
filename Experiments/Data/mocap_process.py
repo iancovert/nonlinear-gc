@@ -1,5 +1,6 @@
 import numpy as np 
 import scipy.io as spio
+from data_processing import YX_list
 
 def load_data_12():
     TD = np.loadtxt('mocap124dataset/data_per_seq/01_01.dat')
@@ -178,6 +179,9 @@ def locations_joints(names):
 
 if __name__ == "__main__": 
     x, names = load_data_64()
+    y_train, x_train = YX_list(x)
+
+
     idex_list, unique_names = determine_equivalent_edges(names)
     import igraph
     from igraph import *
