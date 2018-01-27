@@ -5,6 +5,7 @@ from torch.autograd import Variable
 
 import numpy as np
 from itertools import chain
+import copy
 
 from regularize import *
 
@@ -33,6 +34,9 @@ class ParallelLSTMEncoding:
 		if opt == 'prox':
 			self.optimizers = [optim.SGD(list(lstm.parameters()) + list(out.parameters()), lr = lr, momentum = 0.0) for lstm, out in zip(self.lstms, self.out_layers)]
 			self.train = self._train_prox
+
+		elif opt == 'line':
+			self.train = self._train_prox_line
 
 		else:
 			if opt == 'adam':
@@ -124,6 +128,71 @@ class ParallelLSTMEncoding:
 
 		else:
 			self._truncated_training(X, Y, truncation, self._train_builtin_helper)
+
+	def _train_prox_line(self, X, Y, truncation = None):
+		if truncation is not None:
+			raise ValueError('line search does not support gradient truncation')
+		
+		else:
+			# Compute loss and objective
+			loss = self._loss(X, Y, hidden = None, return_hidden = False)
+			penalty = [self.lam * apply_penalty(lstm.weight_ih_l0, 'group_lasso', self.input_series) for lstm in self.lstms]
+			total_loss = sum(loss)
+
+			# Compute gradient from loss
+			[net.zero_grad() for net in chain(self.lstms, self.out_layers)]
+
+			total_loss.backward()
+
+			# Parameters for line search
+			t = 0.9
+			s = 0.8
+			min_lr = 1e-16
+
+			# Return value, to indicate whether improvements have been made
+			return_value = False
+
+			# Torch Variables for line search
+			X_var = Variable(torch.from_numpy(X).float()).view(-1, 1, self.input_series)
+			Y_var = [Variable(torch.from_numpy(Y[:, target][:, np.newaxis]).float()) for target in range(self.output_series)]
+
+			for target, (lstm, out) in enumerate(list(zip(self.lstms, self.out_layers))):
+				# Set up initial parameters values
+				lr = self.lr[target]
+				original_objective = loss[target] + penalty[target]
+				new_lstm = copy.deepcopy(lstm)
+				new_out = copy.deepcopy(out)
+
+				while lr > min_lr:
+					# Take gradient step in new params
+					for params, o_params in chain(zip(new_lstm.parameters(), lstm.parameters()), zip(new_out.parameters(), out.parameters())):
+						params.data = o_params.data - o_params.grad.data * lr
+
+					# Apply proximal operator to new params
+					prox_operator(new_lstm.weight_ih_l0, 'group_lasso', self.input_series, lr, self.lam)
+
+					# Compute objective using new params
+					hidden = (Variable(torch.zeros(self.hidden_layers, 1, self.hidden_size)), Variable(torch.zeros(self.hidden_layers, 1, self.hidden_size)))
+					Y_pred = new_out(new_lstm(X_var, hidden)[0].view(-1, self.hidden_size))
+					new_objective = self.loss_fn(Y_pred, Y_var[target]) + self.lam * apply_penalty(new_lstm.weight_ih_l0, 'group_lasso', self.input_series)
+
+					diff_squared = 0.0
+					for params, o_params in chain(zip(new_lstm.parameters(), lstm.parameters()), zip(new_out.parameters(), out.parameters())):
+						diff_squared += torch.sum((o_params.data - params.data)**2)
+
+					if (new_objective <= original_objective - t * lr * diff_squared).data[0]:
+						# Replace parameter values
+						for params, o_params in chain(zip(new_lstm.parameters(), lstm.parameters()), zip(new_out.parameters(), out.parameters())):
+							o_params.data = params.data
+						
+						return_value = True
+						break
+
+					else:
+						# Try a lower learning rate
+						lr *= s
+
+			return return_value
 
 	def _truncated_training(self, X, Y, truncation, training_func):
 		T = X.shape[0]

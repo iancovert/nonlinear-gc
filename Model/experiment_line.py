@@ -75,7 +75,7 @@ def run_experiment(model, X_train, Y_train, nepoch, mbsize = None, verbose = Tru
 	else:
 		return train_loss[:counter, :], train_objective[:counter, :], model.get_weights()
 
-def run_recurrent_experiment(model, X_train, Y_train, nepoch, window_size = None, stride_size = None, truncation = None, verbose = True, loss_check = 100, predictions = False):
+def run_recurrent_experiment(model, X_train, Y_train, nepoch, window_size = None, stride_size = None, verbose = True, loss_check = 100, predictions = False):
 	if not model.opt == 'line':
 		raise ValueError('optimization method must be line search')
 
@@ -96,19 +96,22 @@ def run_recurrent_experiment(model, X_train, Y_train, nepoch, window_size = None
 
 	def train_on_series(X, Y):
 		if windowed and X.shape[0] > window_size:
+			improvement = False
 			start = 0
 			end = window_size
 
 			while end < T + 1:
 				x_batch = X[range(start, end), :]
 				y_batch = Y[range(start, end), :]
-				model.train(x_batch, y_batch, truncation = truncation)
+				improvement = improvement or model.train(x_batch, y_batch)
 
 				start = start + stride_size
 				end = start + window_size
 
+			return improvement
+
 		else:
-			model.train(X, Y, truncation = truncation)
+			return model.train(X, Y)
 
 	# Determine output size
 	nchecks = max(int(nepoch / loss_check), 1)
@@ -143,7 +146,7 @@ def run_recurrent_experiment(model, X_train, Y_train, nepoch, window_size = None
 			improvement = train_on_series(X_train, Y_train)
 
 		# Check progress
-		if epoch % loss_check == 0:
+		if (epoch + 1) % loss_check == 0:
 			# Save results
 			if not format == 'list':
 				train_loss[counter, :] = model.calculate_loss(X_train, Y_train)
