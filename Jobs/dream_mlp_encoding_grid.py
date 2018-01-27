@@ -14,22 +14,21 @@ hidden_grid = [4, 8]
 network_lag_grid = [2]
 
 nepoch_grid = [5000]
-lr_grid = [0.01]
-cooldown_grid = ['Y']
+lr_grid = [0.001]
 
-size_grid = [50]
+size_grid = [100]
 type_grid = ['Ecoli', 'Yeast']
 number_grid = [1, 2, 3]
 
 BASECMD = 'python dream_mlp_encoding.py'
 
 param_grid = product(lam_grid, seed_grid, hidden_grid, network_lag_grid,
-	nepoch_grid, lr_grid, cooldown_grid,
+	nepoch_grid, lr_grid,
 	size_grid, type_grid, number_grid)
 
 with open(jobfile, 'w') as f:
 	for param in param_grid:
-		lam, seed, hidden, network_lag, nepoch, lr, cooldown, size, typ, number = param
+		lam, seed, hidden, network_lag, nepoch, lr, size, typ, number = param
 
 		argstr = BASECMD
 
@@ -40,7 +39,6 @@ with open(jobfile, 'w') as f:
 
 		argstr += ' --nepoch=%d' % nepoch
 		argstr += ' --lr=%e' % lr
-		argstr += ' --cooldown=%s' % cooldown
 		
 		argstr += ' --size=%d' % size
 		argstr += ' --type=%s' % typ
