@@ -8,17 +8,17 @@ tstamp = time.strftime('%H%M%S')
 jobname = 'standardized_var_mlp_encoding_%s_%s' % (dstamp, tstamp)
 jobfile = 'Batches/%s.job' % jobname
 
-lam_grid = np.append(np.geomspace(10.0, 0.001, num = 50), 0)
+lam_grid = np.append(np.geomspace(10.0, 0.01, num = 50), 0)
 seed_grid = [0]
 hidden_grid = [10]
-network_lag_grid = [1]
+network_lag_grid = [5]
 
-nepoch_grid = [5000]
+nepoch_grid = [20000]
 lr_grid = [0.01]
 cooldown_grid = ['Y']
 
 sparsity_grid = [0.3]
-p_grid = [10]
+p_grid = [20]
 T_grid = [500]
 lag_grid = [1]
 
