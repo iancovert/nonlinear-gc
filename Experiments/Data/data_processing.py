@@ -90,6 +90,16 @@ def whiten_data_cholesky(X):
 
 	return np.dot(X_centered, L_inv.T)
 
+def YX_list(X):
+	n = len(X)
+	Y_train = list()
+	X_train = list()
+	for i in range(n):
+		Y_train.append(X[i][1:,:])
+		X_train.append(X[i][:-1,:])
+
+	return(Y_train, X_train)
+
 def normalize_list(X,type="cat"):
     if (type == "cat"):
         Xd = np.concatenate(X)
