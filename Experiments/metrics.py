@@ -50,7 +50,7 @@ def compute_AUC(GC_true, GC_list, thresh, self_con = True):
 
 	for i in range(m):
 		thresh_grid = np.zeros((p, p)).astype(int)
-		thresh_grid[GC_list[i] >= thresh] = 1
+		thresh_grid[GC_list[i] > thresh] = 1
 		thresh_list.append(thresh_grid)
 
 	FP_rate = np.zeros(m)

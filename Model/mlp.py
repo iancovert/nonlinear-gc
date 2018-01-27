@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.autograd import Variable
-
+import copy
 import numpy as np
 from itertools import chain
 
@@ -46,6 +46,9 @@ class ParallelMLPEncoding:
 			self.optimizers = [optim.SGD(list(net.parameters()), lr = lr, momentum = 0.0) for net in self.sequentials]
 			self.train = self._train_prox
 
+		elif opt == 'line':
+			self.train = self._train_prox_line
+
 		else:
 			if opt == 'adam':
 				self.optimizers = [optim.Adam(list(net.parameters()), lr = lr) for net in self.sequentials]
@@ -60,12 +63,73 @@ class ParallelMLPEncoding:
 
 	def cooldown(self, p):
 		self.lr[p] *= self.lr_decay
-		if self.opt == 'momentum':
+		if self.opt == 'prox':
+			self.optimizers[p] = optim.SGD(list(self.sequentials[p].parameters()), lr = self.lr[p], momentum = 0.0)
+		elif self.opt == 'momentum':
 			self.optimizers[p] = optim.SGD(list(self.sequentials[p].parameters()), lr = self.lr[p], momentum = 0.9)
 		elif self.opt == 'adam':
 			self.optimizers[p] = optim.Adam(list(self.sequentials[p].parameters()), lr = self.lr[p])
 		else:
 			self.optimizers[p] = optim.SGD(list(self.sequentials[p].parameters()), lr = self.lr[p])
+
+	def _train_prox_line(self, X, Y):
+		# Compute loss and objective
+		loss = self._loss(X, Y)
+		penalty = [self.lam * apply_penalty(list(net.parameters())[0], self.penalty, self.n, lag = self.lag) for net in self.sequentials]
+		total_loss = sum(loss)
+
+		# Compute gradient from loss
+		[net.zero_grad() for net in self.sequentials]
+
+		total_loss.backward()
+
+		# Parameters for line search
+		t = 0.9
+		s = 0.8
+		min_lr = 1e-16
+
+		# Return value, to indicate whether improvements have been made
+		return_value = False
+
+		# Torch Variables for line search
+		X_var = Variable(torch.from_numpy(X).float())
+		Y_var = [Variable(torch.from_numpy(Y[:, target][:, np.newaxis]).float()) for target in range(self.p)]
+
+		for target, net in enumerate(self.sequentials):
+			# Set up initial parameter values
+			lr = self.lr[target]
+			original_objective = loss[target] + penalty[target]
+			new_net = copy.deepcopy(net)
+
+			while lr > min_lr:
+				# Take gradient step in new params
+				for params, o_params in zip(new_net.parameters(), net.parameters()):
+					params.data = o_params.data - o_params.grad.data * lr
+				
+				# Apply proximal operator to new params
+				prox_operator(list(new_net.parameters())[0], self.penalty, self.n, lr, self.lam, lag = self.lag)
+				
+				# Compute objective using new params
+				Y_pred = new_net(X_var)
+				new_objective = self.loss_fn(Y_pred, Y_var[target]) + self.lam * apply_penalty(list(new_net.parameters())[0], self.penalty, self.n, lag = self.lag)
+				
+				diff_squared = 0.0
+				for params, o_params in zip(new_net.parameters(), net.parameters()):
+					diff_squared += torch.sum((o_params.data - params.data)**2)
+
+				if (new_objective <= original_objective - t * lr * diff_squared).data[0]:
+					# Replace parameter values
+					for params, o_params in zip(new_net.parameters(), net.parameters()):
+						o_params.data = params.data
+					
+					return_value = True
+					break
+
+				else:
+					# Try a lower learning rate
+					lr *= s
+
+		return return_value
 
 	def _train_prox(self, X, Y):
 		# Compute total loss
@@ -194,6 +258,13 @@ class ParallelMLPDecoding:
 
 			self.train = self._train_builtin
 
+
+
+
+
+
+
+
 	def _train_prox(self, X, Y):
 		loss = self._loss(X, Y)
 		total_loss = sum(loss)
@@ -202,6 +273,9 @@ class ParallelMLPDecoding:
 		[net.zero_grad() for net in chain(self.series_nets, self.out_nets)]
 
 		total_loss.backward()
+
+
+
 		self.optimizer.step()
 
 		# Apply prox operator
