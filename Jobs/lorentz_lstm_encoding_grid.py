@@ -16,7 +16,7 @@ nepoch_grid = [2000]
 lr_grid = [0.01]
 cooldown_grid = ['Y']
 
-p_grid = [10]
+p_grid = [20]
 T_grid = [500]
 
 BASECMD = 'python lorentz_lstm_encoding.py'

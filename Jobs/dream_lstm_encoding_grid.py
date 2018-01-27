@@ -10,13 +10,13 @@ jobfile = 'Batches/%s.job' % jobname
 
 lam_grid = np.append(np.geomspace(10.0, 0.001, num = 50), 0)
 seed_grid = [0]
-hidden_grid = [4, 8]
+hidden_grid = [4, 10]
 
 nepoch_grid = [5000]
 lr_grid = [0.01]
 cooldown_grid = ['Y']
 
-size_grid = [50]
+size_grid = [100]
 type_grid = ['Ecoli', 'Yeast']
 number_grid = [1, 2, 3]
 
