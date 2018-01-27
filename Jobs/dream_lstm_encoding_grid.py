@@ -12,23 +12,22 @@ lam_grid = np.append(np.geomspace(10.0, 0.001, num = 50), 0)
 seed_grid = [0]
 hidden_grid = [4, 8]
 
-nepoch_grid = [5000]
+nepoch_grid = [2000]
 lr_grid = [0.01]
-cooldown_grid = ['Y']
 
-size_grid = [50]
+size_grid = [100]
 type_grid = ['Ecoli', 'Yeast']
 number_grid = [1, 2, 3]
 
 BASECMD = 'python dream_lstm_encoding.py'
 
 param_grid = product(lam_grid, seed_grid, hidden_grid,
-	nepoch_grid, lr_grid, cooldown_grid,
+	nepoch_grid, lr_grid,
 	size_grid, type_grid, number_grid)
 
 with open(jobfile, 'w') as f:
 	for param in param_grid:
-		lam, seed, hidden, nepoch, lr, cooldown, size, typ, number = param
+		lam, seed, hidden, nepoch, lr, size, typ, number = param
 
 		argstr = BASECMD
 
@@ -38,7 +37,6 @@ with open(jobfile, 'w') as f:
 
 		argstr += ' --nepoch=%d' % nepoch
 		argstr += ' --lr=%e' % lr
-		argstr += ' --cooldown=%s' % cooldown
 		
 		argstr += ' --size=%d' % size
 		argstr += ' --type=%s' % typ

@@ -14,22 +14,21 @@ hidden_grid = [10]
 
 nepoch_grid = [2000]
 lr_grid = [0.01]
-cooldown_grid = ['Y']
 
 sparsity_grid = [0.3]
-p_grid = [10]
+p_grid = [20]
 T_grid = [500]
 lag_grid = [1]
 
 BASECMD = 'python standardized_var_lstm_encoding.py'
 
 param_grid = product(lam_grid, seed_grid, hidden_grid,
-	nepoch_grid, lr_grid, cooldown_grid,
+	nepoch_grid, lr_grid,
 	sparsity_grid, p_grid, T_grid, lag_grid)
 
 with open(jobfile, 'w') as f:
 	for param in param_grid:
-		lam, seed, hidden, nepoch, lr, cooldown, sparsity, p, T, lag = param
+		lam, seed, hidden, nepoch, lr, sparsity, p, T, lag = param
 
 		argstr = BASECMD
 
@@ -39,7 +38,6 @@ with open(jobfile, 'w') as f:
 
 		argstr += ' --nepoch=%d' % nepoch
 		argstr += ' --lr=%e' % lr
-		argstr += ' --cooldown=%s' % cooldown
 		
 		argstr += ' --sparsity=%e' % sparsity
 		argstr += ' --p=%d' % p

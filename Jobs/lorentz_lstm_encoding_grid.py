@@ -14,20 +14,19 @@ hidden_grid = [10]
 
 nepoch_grid = [2000]
 lr_grid = [0.01]
-cooldown_grid = ['Y']
 
-p_grid = [10]
+p_grid = [20]
 T_grid = [500]
 
 BASECMD = 'python lorentz_lstm_encoding.py'
 
 param_grid = product(lam_grid, seed_grid, hidden_grid,
-	nepoch_grid, lr_grid, cooldown_grid,
+	nepoch_grid, lr_grid,
 	p_grid, T_grid)
 
 with open(jobfile, 'w') as f:
 	for param in param_grid:
-		lam, seed, hidden, nepoch, lr, cooldown, p, T = param
+		lam, seed, hidden, nepoch, lr, p, T = param
 
 		argstr = BASECMD
 
@@ -37,10 +36,8 @@ with open(jobfile, 'w') as f:
 
 		argstr += ' --nepoch=%d' % nepoch
 		argstr += ' --lr=%e' % lr
-		argstr += ' --cooldown=%s' % cooldown
 		
 		argstr += ' --p=%d' % p
 		argstr += ' --T=%d' % T
 
 		f.write(argstr + '\n')
-
