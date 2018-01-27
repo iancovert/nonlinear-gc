@@ -88,14 +88,14 @@ def run_recurrent_experiment(model, X_train, Y_train, nepoch, window_size = None
 		format = 'list'
 
 	# Window parameters
-	T = X_train.shape[0]
 	if window_size is not None:
 		windowed = True
 		if stride_size is None:
 			stride_size = window_size
 
 	def train_on_series(X, Y):
-		if windowed and X.shape[0] > window_size:
+		T = X.shape[0]
+		if windowed and T > window_size:
 			improvement = False
 			start = 0
 			end = window_size
@@ -115,10 +115,13 @@ def run_recurrent_experiment(model, X_train, Y_train, nepoch, window_size = None
 
 	# Determine output size
 	nchecks = max(int(nepoch / loss_check), 1)
-	if len(Y_train.shape) == 1:
-		d_out = 1
+	if not format == 'list':
+		if len(Y_train.shape) == 1:
+			d_out = 1
+		else:
+			d_out = Y_train.shape[-1]
 	else:
-		d_out = Y_train.shape[-1]
+		d_out = Y_train[0].shape[0]
 
 	# Prepare for training
 	train_loss = np.zeros((nchecks, d_out))
