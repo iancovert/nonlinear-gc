@@ -10,7 +10,7 @@ jobfile = 'Batches/%s.job' % jobname
 
 lam_grid = np.append(np.geomspace(10.0, 0.001, num = 50), 0)
 seed_grid = [0]
-hidden_grid = [10]
+hidden_grid = [20]
 
 nepoch_grid = [1500]
 

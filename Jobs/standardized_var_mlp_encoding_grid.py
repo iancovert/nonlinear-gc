@@ -19,7 +19,7 @@ lr_grid = [0.01]
 sparsity_grid = [0.3]
 p_grid = [20]
 T_grid = [500]
-lag_grid = [1]
+lag_grid = [1, 2, 3, 4, 5]
 
 BASECMD = 'python standardized_var_mlp_encoding.py'
 
@@ -46,5 +46,5 @@ with open(jobfile, 'w') as f:
 		argstr += ' --T=%d' % T
 		argstr += ' --lag=%d' % lag
 
-		#f.write(argstr + '\n')
-		print(argstr)
+		f.write(argstr + '\n')
+

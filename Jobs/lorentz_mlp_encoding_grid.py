@@ -13,11 +13,11 @@ seed_grid = [0]
 hidden_grid = [10]
 network_lag_grid = [5]
 
-nepoch_grid = [5000]
+nepoch_grid = [20000]
 lr_grid = [0.01]
 cooldown_grid = ['Y']
 
-p_grid = [10]
+p_grid = [20]
 T_grid = [500]
 
 BASECMD = 'python lorentz_mlp_encoding.py'
