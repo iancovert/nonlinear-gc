@@ -1,6 +1,6 @@
 import numpy as np 
 import scipy.io as spio
-from data_processing import YX_list
+from data_processing import YX_list, reshape_list
 
 def load_data_12():
     TD = np.loadtxt('mocap124dataset/data_per_seq/01_01.dat')
@@ -179,6 +179,7 @@ def locations_joints(names):
 
 if __name__ == "__main__": 
     x, names = load_data_64()
+    X = reshape_list(x,20)
     y_train, x_train = YX_list(x)
 
 

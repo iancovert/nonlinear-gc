@@ -100,6 +100,26 @@ def YX_list(X):
 
 	return(Y_train, X_train)
 
+def reshape_list(X,d=20):
+	nl = len(X)
+	temp_tense = list()
+	for i in range(nl):
+		t = X[i].shape[0]
+		nb = int(np.floor(t/d))
+		temp_tense.append(np.zeros((d,X[i].shape[1],nb)))
+		for j in range(nb):
+			start = j*d
+			end = (j + 1)*d
+			print(range(start,end))
+			temp_tense[i][:,:,j] = X[i][range(start,end),:]
+
+
+	final_tense = np.concatenate(temp_tense,axis=2)
+	return(final_tense)
+
+
+
+
 def normalize_list(X,type="cat"):
     if (type == "cat"):
         Xd = np.concatenate(X)
