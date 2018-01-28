@@ -31,8 +31,6 @@ parser.add_argument('--size', type = int, default = 50, help = 'size of Dream ne
 parser.add_argument('--type', type = str, default = 'Ecoli', help = 'Dream network type')
 parser.add_argument('--number', type = int, default = 1, help = 'Dream dataset number')
 
-parser.add_argument('--window', type = int, default = 20, help = 'size of sliding windows for splitting training data')
-parser.add_argument('--stride', type = int, default = 10, help = 'size of stride of sliding windows for splitting training data')
 parser.add_argument('--loss_check', type = int, default = 10, help = 'interval for checking loss')
 
 args = parser.parse_args()
@@ -68,7 +66,7 @@ model = ParallelLSTMEncoding(Y_train.shape[2], Y_train.shape[2], args.hidden, 1,
 
 # Run experiment
 train_loss, train_objective, weights, pred = run_recurrent_experiment(model, X_train, Y_train, 
-	args.nepoch, window_size = args.window, stride_size = args.stride, predictions = True, loss_check = args.loss_check)
+	args.nepoch, predictions = True, loss_check = args.loss_check)
 
 # Format results
 experiment_params = {

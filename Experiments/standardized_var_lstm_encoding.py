@@ -32,8 +32,6 @@ parser.add_argument('--p', type = int, default = 10, help = 'dimensionality of t
 parser.add_argument('--T', type = int, default = 1000, help = 'length of time series')
 parser.add_argument('--lag', type = int, default = 1, help = 'lag in VAR model')
 
-parser.add_argument('--window', type = int, default = 20, help = 'size of sliding windows for splitting training data')
-parser.add_argument('--stride', type = int, default = 10, help = 'size of stride of sliding windows for splitting training data')
 parser.add_argument('--loss_check', type = int, default = 10, help = 'interval for checking loss')
 
 args = parser.parse_args()
@@ -69,7 +67,7 @@ model = ParallelLSTMEncoding(Y_train.shape[1], Y_train.shape[1], args.hidden, 1,
 
 # Run experiment
 train_loss, train_objective, weights, pred = run_recurrent_experiment(model, X_train, Y_train, 
-	args.nepoch, window_size = args.window, stride_size = args.stride, predictions = True, loss_check = args.loss_check)
+	args.nepoch, predictions = True, loss_check = args.loss_check)
 
 # Format results
 experiment_params = {
