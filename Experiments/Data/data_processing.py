@@ -117,8 +117,23 @@ def reshape_list(X,d=20):
 	final_tense = np.concatenate(temp_tense,axis=1)
 	return(final_tense)
 
+def tensorize_sequence(X, window = 20, stride = None):
+	if stride is None:
+		stride = window
 
+	sequence_list = []
+	T, p = X.shape
+	start = 0
+	end = window
+	while end < T:
+		tensor = np.zeros((window, 1, p))
+		tensor[:, 0, :] = X[range(start, end), :]
+		sequence_list.append(tensor)
 
+		start += stride
+		end += stride
+
+	return np.concatenate(sequence_list, axis = 1)
 
 def normalize_list(X,type="cat"):
     if (type == "cat"):

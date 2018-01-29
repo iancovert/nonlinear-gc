@@ -10,7 +10,7 @@ import sys
 
 # Data modules
 from Data.generate_synthetic import lorentz_96_model_2
-from Data.data_processing import split_data, normalize
+from Data.data_processing import normalize, tensorize_sequence
 
 # Model modules
 sys.path.append('../Model')
@@ -26,11 +26,12 @@ parser.add_argument('--hidden', type = int, default = 10, help = 'hidden units')
 parser.add_argument('--nepoch', type = int, default = 1000, help = 'number of training epochs')
 parser.add_argument('--lr', type = float, default = 0.001, help = 'learning rate')
 
+parser.add_argument('--FC', type = float, default = 8.0, help = 'forcing constant')
+parser.add_argument('--sd', type = float, default = 2.5, help = 'standard deviation of noise')
+parser.add_argument('--dt', type = float, default = 0.1, help = 'sampling rate')
 parser.add_argument('--p', type = int, default = 10, help = 'dimensionality of time series')
 parser.add_argument('--T', type = int, default = 1000, help = 'length of time series')
 
-parser.add_argument('--window', type = int, default = 20, help = 'size of sliding windows for splitting training data')
-parser.add_argument('--stride', type = int, default = 10, help = 'size of stride of sliding windows for splitting training data')
 parser.add_argument('--loss_check', type = int, default = 10, help = 'interval for checking loss')
 
 args = parser.parse_args()
@@ -54,19 +55,21 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # Prepare data
-X, GC = lorentz_96_model_2(8, args.p, args.T, sd = 2.5)
+X, GC = lorentz_96_model_2(args.FC, args.p, args.T, sd = args.sd, delta_t = args.dt)
 X = normalize(X)
 Y_train = X[1:, :]
+Y_train = tensorize_sequence(Y_train, window = 50, stride = 10)
 X_train = X[:-1, :]
+X_train = tensorize_sequence(X_train, window = 50, stride = 10)
 
 # Get model
 if args.seed != 0:
 	torch.manual_seed(args.seed)
-model = ParallelLSTMEncoding(Y_train.shape[1], Y_train.shape[1], args.hidden, 1, args.lr, 'line', args.lam)
+model = ParallelLSTMEncoding(Y_train.shape[-1], Y_train.shape[-1], args.hidden, 1, args.lr, 'line', args.lam)
 
 # Run experiment
 train_loss, train_objective, weights, pred = run_recurrent_experiment(model, X_train, Y_train,
-	args.nepoch, window_size = args.window, stride_size = args.stride, predictions = True, loss_check = args.loss_check)
+	args.nepoch, predictions = True, loss_check = args.loss_check)
 
 # Format results
 experiment_params = {
@@ -80,6 +83,9 @@ experiment_params = {
 data_params = {
 	'p': args.p,
 	'T': args.T,
+	'FC': args.FC,
+	'sd': args.sd,
+	'dt': args.dt,
 	'GC_true': GC
 }
 

@@ -86,7 +86,7 @@ class ParallelMLPEncoding:
 		# Parameters for line search
 		t = 0.9
 		s = 0.8
-		min_lr = 1e-16
+		min_lr = 1e-7
 
 		# Return value, to indicate whether improvements have been made
 		return_value = False
@@ -113,11 +113,11 @@ class ParallelMLPEncoding:
 				Y_pred = new_net(X_var)
 				new_objective = self.loss_fn(Y_pred, Y_var[target]) + self.lam * apply_penalty(list(new_net.parameters())[0], self.penalty, self.n, lag = self.lag)
 				
-				diff_squared = 0.0
-				for params, o_params in zip(new_net.parameters(), net.parameters()):
-					diff_squared += torch.sum((o_params.data - params.data)**2)
-
-				if (new_objective <= original_objective - t * lr * diff_squared).data[0]:
+				diff_squared = sum([torch.sum((o_params.data - params.data)**2) for (params, o_params) in zip(new_net.parameters(), net.parameters())])
+				# diff_squared = 0.0
+				# for params, o_params in zip(new_net.parameters(), net.parameters()):
+				# 	diff_squared += torch.sum((o_params.data - params.data)**2)
+				if (new_objective < original_objective - t * lr * diff_squared).data[0]:
 					# Replace parameter values
 					for params, o_params in zip(new_net.parameters(), net.parameters()):
 						o_params.data = params.data
@@ -128,6 +128,9 @@ class ParallelMLPEncoding:
 				else:
 					# Try a lower learning rate
 					lr *= s
+
+			# Update initial learning rate for next training iteration
+			self.lr[target] = np.sqrt(self.lr[target] * lr)
 
 		return return_value
 

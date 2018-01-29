@@ -10,7 +10,7 @@ import sys
 
 # Data modules
 from Data.generate_synthetic import standardized_var_model
-from Data.data_processing import split_data, normalize
+from Data.data_processing import normalize, tensorize_sequence
 
 # Model modules
 sys.path.append('../Model')
@@ -32,8 +32,6 @@ parser.add_argument('--p', type = int, default = 10, help = 'dimensionality of t
 parser.add_argument('--T', type = int, default = 1000, help = 'length of time series')
 parser.add_argument('--lag', type = int, default = 1, help = 'lag in VAR model')
 
-parser.add_argument('--window', type = int, default = 20, help = 'size of sliding windows for splitting training data')
-parser.add_argument('--stride', type = int, default = 10, help = 'size of stride of sliding windows for splitting training data')
 parser.add_argument('--loss_check', type = int, default = 10, help = 'interval for checking loss')
 
 args = parser.parse_args()
@@ -43,7 +41,7 @@ experiment_base = 'Standardized VAR LSTM Encoding'
 results_dir = 'Results/' + experiment_base
 
 experiment_name = results_dir + '/expt'
-experiment_name += '_nepoch=%d_lr=%e_cooldown=%s' % (args.nepoch, args.lr, args.cooldown)
+experiment_name += '_nepoch=%d_lr=%e' % (args.nepoch, args.lr)
 experiment_name += '_lam=%e_seed=%d_hidden=%d' % (args.lam, args.seed, args.hidden)
 experiment_name += '_spars=%e_p=%d_T=%d_lag=%d.out' % (args.sparsity, args.p, args.T, args.lag)
 
@@ -60,16 +58,18 @@ if os.path.isfile(experiment_name):
 X, _, GC = standardized_var_model(args.sparsity, args.p, 5, 1.0, args.T, args.lag)
 X = normalize(X)
 Y_train = X[1:, :]
+Y_train = tensorize_sequence(Y_train, window = 50, stride = 10)
 X_train = X[:-1, :]
+X_train = tensorize_sequence(X_train, window = 50, stride = 10)
 
 # Get model
 if args.seed != 0:
 	torch.manual_seed(args.seed)
-model = ParallelLSTMEncoding(Y_train.shape[1], Y_train.shape[1], args.hidden, 1, args.lr, 'line', args.lam)
+model = ParallelLSTMEncoding(Y_train.shape[-1], Y_train.shape[-1], args.hidden, 1, args.lr, 'line', args.lam)
 
 # Run experiment
 train_loss, train_objective, weights, pred = run_recurrent_experiment(model, X_train, Y_train, 
-	args.nepoch, window_size = args.window, stride_size = args.stride, predictions = True, loss_check = args.loss_check)
+	args.nepoch, predictions = True, loss_check = args.loss_check)
 
 # Format results
 experiment_params = {
