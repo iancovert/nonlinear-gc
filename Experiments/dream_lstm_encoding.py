@@ -10,7 +10,7 @@ import sys
 
 # Data modules
 from Data.DREAM_preprocess import import_DREAM
-from Data.data_processing import split_data, normalize
+from Data.data_processing import normalize
 
 # Model modules
 sys.path.append('../Model')

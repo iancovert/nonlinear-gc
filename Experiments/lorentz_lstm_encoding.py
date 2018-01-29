@@ -10,7 +10,7 @@ import sys
 
 # Data modules
 from Data.generate_synthetic import lorentz_96_model_2
-from Data.data_processing import split_data, normalize
+from Data.data_processing import normalize, tensorize_sequence
 
 # Model modules
 sys.path.append('../Model')
@@ -55,12 +55,14 @@ if os.path.isfile(experiment_name):
 X, GC = lorentz_96_model_2(8, args.p, args.T, sd = 2.5)
 X = normalize(X)
 Y_train = X[1:, :]
+Y_train = tensorize_sequence(Y_train, window = 50, stride = 10)
 X_train = X[:-1, :]
+X_train = tensorize_sequence(X_train, window = 50, stride = 10)
 
 # Get model
 if args.seed != 0:
 	torch.manual_seed(args.seed)
-model = ParallelLSTMEncoding(Y_train.shape[1], Y_train.shape[1], args.hidden, 1, args.lr, 'line', args.lam)
+model = ParallelLSTMEncoding(Y_train.shape[-1], Y_train.shape[-1], args.hidden, 1, args.lr, 'line', args.lam)
 
 # Run experiment
 train_loss, train_objective, weights, pred = run_recurrent_experiment(model, X_train, Y_train,
