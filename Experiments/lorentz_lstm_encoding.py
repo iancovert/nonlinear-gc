@@ -26,6 +26,9 @@ parser.add_argument('--hidden', type = int, default = 10, help = 'hidden units')
 parser.add_argument('--nepoch', type = int, default = 1000, help = 'number of training epochs')
 parser.add_argument('--lr', type = float, default = 0.001, help = 'learning rate')
 
+parser.add_argument('--FC', type = float, default = 8.0, help = 'forcing constant')
+parser.add_argument('--sd', type = float, default = 2.5, help = 'standard deviation of noise')
+parser.add_argument('--dt', type = float, default = 0.1, help = 'sampling rate')
 parser.add_argument('--p', type = int, default = 10, help = 'dimensionality of time series')
 parser.add_argument('--T', type = int, default = 1000, help = 'length of time series')
 
@@ -52,7 +55,7 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # Prepare data
-X, GC = lorentz_96_model_2(8, args.p, args.T, sd = 2.5)
+X, GC = lorentz_96_model_2(args.FC, args.p, args.T, sd = args.sd, delta_t = args.dt)
 X = normalize(X)
 Y_train = X[1:, :]
 Y_train = tensorize_sequence(Y_train, window = 50, stride = 10)
@@ -80,6 +83,9 @@ experiment_params = {
 data_params = {
 	'p': args.p,
 	'T': args.T,
+	'FC': args.FC,
+	'sd': args.sd,
+	'dt': args.dt,
 	'GC_true': GC
 }
 
