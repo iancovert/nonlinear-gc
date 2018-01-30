@@ -10,7 +10,7 @@ provides list of mocap datasets for the 64 joints. output is a list
 of datasets. 
 """
 def load_data_64():
-    fname = 'mocap6dataset-master/mocapdata_.mat'
+    fname = 'Data/mocap6dataset-master/mocapdata_.mat'
     mat = spio.loadmat(fname, squeeze_me=True)
 
     x = list()
