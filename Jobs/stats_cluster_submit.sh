@@ -1,8 +1,8 @@
 #!/bin/bash
 
 jobfile=$1
-jobname=${jobfile%.*}
-jobname=${jobname%.*}
+jobnameTemp=${jobfile%.*}
+jobname=${jobnameTemp##*/}
 njobs=$(wc -l ${jobfile} | cut -d" " -f1)
 
 mkdir -p out/${jobname}
@@ -16,9 +16,9 @@ errfile=${logdir}/${jobname}_%A_%a.err
 
 if [ $njobs -gt 999 ]
 then
-    split -d -l 999 $jobfile $jobname
+    split -d -l 999 $jobfile $jobnameTemp
     
-    for jfile in $(ls ${jobname}[0-9][0-9]*)
+    for jfile in $(ls ${jobnameTemp}[0-9][0-9]*)
     do
         jnjobs=$(wc -l $jfile | cut -d" " -f1)
         sbatch --array=1-${jnjobs} --job-name=${jfile} \
