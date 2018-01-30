@@ -106,14 +106,15 @@ def reshape_list(X,d=20):
 	for i in range(nl):
 		t = X[i].shape[0]
 		nb = int(np.floor(t/d))
-		temp_tense.append(np.zeros((d,X[i].shape[1],nb)))
+		temp_tense.append(np.zeros((d,nb,X[i].shape[1])))
 		for j in range(nb):
 			start = j*d
 			end = (j + 1)*d
 			print(range(start,end))
-			temp_tense[i][:,:,j] = X[i][range(start,end),:]
+			temp_tense[i][:,j,:] = X[i][range(start,end),:]
 
-	final_tense = np.concatenate(temp_tense,axis=2)
+
+	final_tense = np.concatenate(temp_tense,axis=1)
 	return(final_tense)
 
 def tensorize_sequence(X, window = 20, stride = None):
@@ -138,9 +139,9 @@ def normalize_list(X,type="cat"):
     if (type == "cat"):
         Xd = np.concatenate(X)
         stds = np.std(Xd,axis = 0)
-        means = Xd.matrix.mean(axis=0)
+        means = Xd.mean(axis=0)
     
-        for i in range(nl):
+        for i in range(len(X)):
             X[i] = (X[i] - means)/stds
 
     return(X)
