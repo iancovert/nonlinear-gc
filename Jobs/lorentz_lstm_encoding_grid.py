@@ -12,7 +12,7 @@ lam_grid = np.append(np.geomspace(10.0, 0.001, num = 50), 0)
 seed_grid = [0]
 hidden_grid = [10]
 
-nepoch_grid = [2000]
+nepoch_grid = [5000]
 lr_grid = [0.01]
 
 FC_grid = [40]
