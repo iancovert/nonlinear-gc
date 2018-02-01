@@ -13,10 +13,10 @@ seed_grid = [0]
 hidden_grid = [10]
 network_lag_grid = [5]
 
-nepoch_grid = [5000]
+nepoch_grid = [30000]
 lr_grid = [0.01]
 
-FC_grid = [40]
+FC_grid = [20, 40, 60]
 sd_grid = [5.0]
 dt_grid = [0.05]
 p_grid = [20]

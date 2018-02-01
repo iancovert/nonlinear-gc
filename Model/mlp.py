@@ -9,7 +9,7 @@ from itertools import chain
 from regularize import *
 
 class ParallelMLPEncoding:
-	def __init__(self, input_series, output_series, lag, hidden_units, lr, opt, lam, penalty, nonlinearity = 'relu', lr_decay = 0.5):
+	def __init__(self, input_series, output_series, lag, hidden_units, lr, opt, lam, penalty, nonlinearity = 'relu', lr_decay = 0.5, weight_decay = 0.2):
 		# Set up networks for each output series
 		self.sequentials = []
 		self.p = output_series
@@ -25,7 +25,7 @@ class ParallelMLPEncoding:
 					net.add_module('relu%d' % i, nn.ReLU())
 				elif nonlinearity == 'sigmoid':
 					net.add_module('sigmoid%d' % i, nn.Sigmoid())
-				else:
+				elif nonlinearity is not None:
 					raise ValueError('nonlinearity must be "relu" or "sigmoid"')
 			net.add_module('out', nn.Linear(hidden_units[-1], 1, bias = True))
 
@@ -38,6 +38,7 @@ class ParallelMLPEncoding:
 		self.lr_decay = lr_decay
 		self.lam = lam
 		self.penalty = penalty
+		self.weight_decay = weight_decay
 
 		# Set up optimizer
 		self.opt = opt
@@ -48,6 +49,7 @@ class ParallelMLPEncoding:
 
 		elif opt == 'line':
 			self.train = self._train_prox_line
+			self.sequential_copy = copy.deepcopy(self.sequentials[0])
 
 		else:
 			if opt == 'adam':
@@ -72,11 +74,18 @@ class ParallelMLPEncoding:
 		else:
 			self.optimizers[p] = optim.SGD(list(self.sequentials[p].parameters()), lr = self.lr[p])
 
+	def _ridge(self, p = None):
+		if p is None:
+			return [self.weight_decay * torch.sum(list(net.parameters())[2]**2) for net in self.sequentials] 
+		else:
+			return self.weight_decay * torch.sum(list(self.sequentials[p].parameters())[2]**2)
+
 	def _train_prox_line(self, X, Y):
 		# Compute loss and objective
 		loss = self._loss(X, Y)
+		ridge = self._ridge()
+		total_loss = sum(loss) + sum(ridge)
 		penalty = [self.lam * apply_penalty(list(net.parameters())[0], self.penalty, self.n, lag = self.lag) for net in self.sequentials]
-		total_loss = sum(loss)
 
 		# Compute gradient from loss
 		[net.zero_grad() for net in self.sequentials]
@@ -86,7 +95,7 @@ class ParallelMLPEncoding:
 		# Parameters for line search
 		t = 0.9
 		s = 0.8
-		min_lr = 1e-7
+		min_lr = 1e-18
 
 		# Return value, to indicate whether improvements have been made
 		return_value = False
@@ -95,11 +104,12 @@ class ParallelMLPEncoding:
 		X_var = Variable(torch.from_numpy(X).float())
 		Y_var = [Variable(torch.from_numpy(Y[:, target][:, np.newaxis]).float()) for target in range(self.p)]
 
+		new_net = self.sequential_copy
+
 		for target, net in enumerate(self.sequentials):
 			# Set up initial parameter values
 			lr = self.lr[target]
-			original_objective = loss[target] + penalty[target]
-			new_net = copy.deepcopy(net)
+			original_objective = loss[target] + ridge[target] + penalty[target]
 
 			while lr > min_lr:
 				# Take gradient step in new params
@@ -111,12 +121,12 @@ class ParallelMLPEncoding:
 				
 				# Compute objective using new params
 				Y_pred = new_net(X_var)
-				new_objective = self.loss_fn(Y_pred, Y_var[target]) + self.lam * apply_penalty(list(new_net.parameters())[0], self.penalty, self.n, lag = self.lag)
+				new_objective = self.loss_fn(Y_pred, Y_var[target])
+				new_objective += self.lam * apply_penalty(list(new_net.parameters())[0], self.penalty, self.n, lag = self.lag)
+				new_objective += self.weight_decay * torch.sum(list(new_net.parameters())[2]**2)
 				
 				diff_squared = sum([torch.sum((o_params.data - params.data)**2) for (params, o_params) in zip(new_net.parameters(), net.parameters())])
-				# diff_squared = 0.0
-				# for params, o_params in zip(new_net.parameters(), net.parameters()):
-				# 	diff_squared += torch.sum((o_params.data - params.data)**2)
+				
 				if (new_objective < original_objective - t * lr * diff_squared).data[0]:
 					# Replace parameter values
 					for params, o_params in zip(new_net.parameters(), net.parameters()):
@@ -137,7 +147,11 @@ class ParallelMLPEncoding:
 	def _train_prox(self, X, Y):
 		# Compute total loss
 		loss = self._loss(X, Y)
-		total_loss = sum(loss)
+		if self.weight_decay > 0.0:
+			ridge = self._ridge()
+			total_loss = sum(loss) + sum(ridge)
+		else:
+			total_loss = sum(loss)
 
 		# Run optimizer
 		[net.zero_grad() for net in self.sequentials]
@@ -169,8 +183,9 @@ class ParallelMLPEncoding:
 
 	def _objective(self, X, Y):
 		loss = self._loss(X, Y)
+		ridge = self._ridge()
 		penalty = [self.lam * apply_penalty(list(net.parameters())[0], self.penalty, self.n, lag = self.lag) for net in self.sequentials]
-		return [l + p for (l, p) in zip(loss, penalty)]
+		return [l + p + r for (l, p, r) in zip(loss, penalty, ridge)]
 
 	def calculate_loss(self, X, Y):
 		loss = self._loss(X, Y)

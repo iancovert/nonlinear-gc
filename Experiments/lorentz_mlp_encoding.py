@@ -64,7 +64,7 @@ X_train, Y_train, _, _ = format_ts_data(X, args.network_lag, validation = 0.0)
 # Get model
 if args.seed != 0:
 	torch.manual_seed(args.seed)
-model = ParallelMLPEncoding(Y_train.shape[1], Y_train.shape[1], args.network_lag, [args.hidden], args.lr, 'line', args.lam, 'hierarchical')
+model = ParallelMLPEncoding(Y_train.shape[1], Y_train.shape[1], args.network_lag, [args.hidden], args.lr, 'line', args.lam, 'hierarchical', nonlinearity = 'sigmoid')
 
 # Run experiment
 train_loss, train_objective, weights, pred = run_experiment(model, X_train, Y_train, args.nepoch, predictions = True, loss_check = args.loss_check)
@@ -89,7 +89,7 @@ data_params = {
 }
 
 best_results = {
-	'predictions_train': pred,
+	'train_objective': train_objective,
 	'GC_est': [np.linalg.norm(np.reshape(w, newshape = (args.hidden * args.network_lag, args.p), order = 'F'), axis = 0) for w in weights]
 }
 
