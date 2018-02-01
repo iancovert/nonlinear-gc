@@ -9,7 +9,7 @@ from itertools import chain
 from regularize import *
 
 class ParallelMLPEncoding:
-	def __init__(self, input_series, output_series, lag, hidden_units, lr, opt, lam, penalty, nonlinearity = 'relu', lr_decay = 0.5, weight_decay = 0.2):
+	def __init__(self, input_series, output_series, lag, hidden_units, lr, opt, lam, penalty, nonlinearity = 'relu', lr_decay = 0.5, weight_decay = 0.001):
 		# Set up networks for each output series
 		self.sequentials = []
 		self.p = output_series
