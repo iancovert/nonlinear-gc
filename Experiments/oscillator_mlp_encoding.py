@@ -9,7 +9,7 @@ import shutil
 import sys
 
 # Data modules
-from Data.generate_synthetic import lorentz_96_model_2
+from Data.generate_synthetic import kuramoto_model
 from Data.data_processing import format_ts_data, normalize
 
 # Model modules
@@ -27,10 +27,10 @@ parser.add_argument('--network_lag', type = int, default = 2, help = 'lag consid
 
 parser.add_argument('--nepoch', type = int, default = 1000, help = 'number of training epochs')
 parser.add_argument('--lr', type = float, default = 0.001, help = 'learning rate')
-parser.add_argument('--weight_decay', type = float, default = 0.001, help = 'weight decay on outgoing weights')
+parser.add_argument('--weight_decay', type = float, default = 0.01, help = 'weight decay on outgoing weights')
 
-parser.add_argument('--FC', type = float, default = 8.0, help = 'forcing constant')
-parser.add_argument('--sd', type = float, default = 2.5, help = 'standard deviation of noise')
+parser.add_argument('--sparsity', type = float, default = 0.3, help = 'sparsity of connections')
+parser.add_argument('--sd', type = float, default = 0.1, help = 'standard deviation of noise')
 parser.add_argument('--dt', type = float, default = 0.1, help = 'sampling rate')
 parser.add_argument('--p', type = int, default = 10, help = 'dimensionality of time series')
 parser.add_argument('--T', type = int, default = 1000, help = 'length of time series')
@@ -40,13 +40,13 @@ parser.add_argument('--loss_check', type = int, default = 10, help = 'interval f
 args = parser.parse_args()
 
 # Prepare filename
-experiment_base = 'Lorentz MLP Encoding'
+experiment_base = 'Oscillator MLP Encoding'
 results_dir = 'Results/' + experiment_base
 
 experiment_name = results_dir + '/expt'
 experiment_name += '_nepoch=%d_lr=%e_wd=%e' % (args.nepoch, args.lr, args.weight_decay)
 experiment_name += '_lam=%e_seed=%d_hidden=%d_networklag=%d' % (args.lam, args.seed, args.hidden, args.network_lag)
-experiment_name += '_p=%d_T=%d_FC=%e_sd=%e.out' % (args.p, args.T, args.FC, args.sd)
+experiment_name += '_sparsity=%e_p=%d_T=%d_sd=%e_dt=%e.out' % (args.sparsity, args.p, args.T, args.sd, args.dt)
 
 # Create directory, if necessary
 if not os.path.exists(results_dir):
@@ -58,7 +58,7 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # Prepare data
-X, GC = lorentz_96_model_2(args.FC, args.p, args.T, sd = args.sd, delta_t = args.dt)
+X, GC = kuramoto_model(args.sparsity, args.p, N = args.T, delta_t = args.dt, sd = args.sd, num_trials = None)
 X = normalize(X)
 X_train, Y_train, _, _ = format_ts_data(X, args.network_lag, validation = 0.0)
 
@@ -84,7 +84,7 @@ experiment_params = {
 data_params = {
 	'p': args.p,
 	'T': args.T,
-	'FC': args.FC,
+	'sparsity': args.sparsity,
 	'sd': args.sd,
 	'dt': args.dt,
 	'GC_true': GC

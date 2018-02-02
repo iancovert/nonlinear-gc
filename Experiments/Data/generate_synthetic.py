@@ -57,15 +57,24 @@ def kuramoto_model(sparsity, p, K = 2, N = 250, delta_t = 0.1, sd = 0.1, seed = 
 
 	# Generate data
 	t = np.linspace(0,N*delta_t,N)
-	Z = np.zeros((N,num_trials,p))
-	for k in range(num_trials):
+
+	if num_trials is None:
 		omega = np.random.uniform(0.0,2.0,size=p)
 		y0 = np.random.uniform(0.0, 2.0 * np.pi, size=p)
-		z = odeint(Kuramoto, y0, t, args = (omega,GC_on,K))
-		z += np.random.normal(loc = 0, scale = sd, size = (N, p))
+		Z = odeint(Kuramoto, y0, t, args = (omega,GC_on,K))
+		Z += np.random.normal(loc = 0, scale = sd, size = (N, p))
 		if cos_transform:
-			z = np.cos(z)
-		Z[:,k,:] = z
+			Z = np.cos(Z)
+	else:
+		Z = np.zeros((N,num_trials,p))
+		for k in range(num_trials):
+			omega = np.random.uniform(0.0,2.0,size=p)
+			y0 = np.random.uniform(0.0, 2.0 * np.pi, size=p)
+			z = odeint(Kuramoto, y0, t, args = (omega,GC_on,K))
+			z += np.random.normal(loc = 0, scale = sd, size = (N, p))
+			if cos_transform:
+				z = np.cos(z)
+			Z[:,k,:] = z
 
 	return Z, GC_on
 

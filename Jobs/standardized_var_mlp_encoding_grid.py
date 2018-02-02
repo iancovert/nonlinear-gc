@@ -8,18 +8,18 @@ tstamp = time.strftime('%H%M%S')
 jobname = 'standardized_var_mlp_encoding_%s_%s' % (dstamp, tstamp)
 jobfile = 'Batches/%s.job' % jobname
 
-lam_grid = np.append(np.geomspace(10.0, 0.001, num = 50), 0)
+lam_grid = np.append(np.geomspace(10.0, 0.01, num = 50), 0)
 seed_grid = [0]
 hidden_grid = [10]
-network_lag_grid = [1]
+network_lag_grid = [5]
 
-nepoch_grid = [5000]
+nepoch_grid = [20000]
 lr_grid = [0.01]
 
 sparsity_grid = [0.3]
-p_grid = [10]
+p_grid = [20]
 T_grid = [500]
-lag_grid = [1]
+lag_grid = [1, 2, 3, 4, 5]
 
 BASECMD = 'python standardized_var_mlp_encoding.py'
 
@@ -46,5 +46,5 @@ with open(jobfile, 'w') as f:
 		argstr += ' --T=%d' % T
 		argstr += ' --lag=%d' % lag
 
-		#f.write(argstr + '\n')
-		print(argstr)
+		f.write(argstr + '\n')
+

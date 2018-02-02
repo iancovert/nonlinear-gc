@@ -100,33 +100,51 @@ def YX_list(X):
 
 	return(Y_train, X_train)
 
-def reshape_list(X,d=20):
+def list_to_matrix(X):
+    return(np.concatenate(X))
+
+def reshapape_list(X,d=20):
 	nl = len(X)
 	temp_tense = list()
 	for i in range(nl):
 		t = X[i].shape[0]
 		nb = int(np.floor(t/d))
-		temp_tense.append(np.zeros((d,X[i].shape[1],nb)))
+		temp_tense.append(np.zeros((d,nb,X[i].shape[1])))
 		for j in range(nb):
 			start = j*d
 			end = (j + 1)*d
 			print(range(start,end))
-			temp_tense[i][:,:,j] = X[i][range(start,end),:]
+			temp_tense[i][:,j,:] = X[i][range(start,end),:]
 
 
-	final_tense = np.concatenate(temp_tense,axis=2)
+	final_tense = np.concatenate(temp_tense,axis=1)
 	return(final_tense)
 
+def tensorize_sequence(X, window = 20, stride = None):
+	if stride is None:
+		stride = window
 
+	sequence_list = []
+	T, p = X.shape
+	start = 0
+	end = window
+	while end < T:
+		tensor = np.zeros((window, 1, p))
+		tensor[:, 0, :] = X[range(start, end), :]
+		sequence_list.append(tensor)
 
+		start += stride
+		end += stride
+
+	return np.concatenate(sequence_list, axis = 1)
 
 def normalize_list(X,type="cat"):
     if (type == "cat"):
         Xd = np.concatenate(X)
         stds = np.std(Xd,axis = 0)
-        means = Xd.matrix.mean(axis=0)
+        means = Xd.mean(axis=0)
     
-        for i in range(nl):
+        for i in range(len(X)):
             X[i] = (X[i] - means)/stds
 
     return(X)
