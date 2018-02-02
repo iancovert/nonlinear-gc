@@ -100,7 +100,10 @@ def YX_list(X):
 
 	return(Y_train, X_train)
 
-def reshape_list(X,d=20):
+def list_to_matrix(X):
+    return(np.concatenate(X))
+
+def reshapape_list(X,d=20):
 	nl = len(X)
 	temp_tense = list()
 	for i in range(nl):
