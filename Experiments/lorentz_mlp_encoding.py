@@ -27,6 +27,7 @@ parser.add_argument('--network_lag', type = int, default = 2, help = 'lag consid
 
 parser.add_argument('--nepoch', type = int, default = 1000, help = 'number of training epochs')
 parser.add_argument('--lr', type = float, default = 0.001, help = 'learning rate')
+parser.add_argument('--weight_decay', type = float, default = 0.001, help = 'weight decay on outgoing weights')
 
 parser.add_argument('--FC', type = float, default = 8.0, help = 'forcing constant')
 parser.add_argument('--sd', type = float, default = 2.5, help = 'standard deviation of noise')
@@ -43,7 +44,7 @@ experiment_base = 'Lorentz MLP Encoding'
 results_dir = 'Results/' + experiment_base
 
 experiment_name = results_dir + '/expt'
-experiment_name += '_nepoch=%d_lr=%e' % (args.nepoch, args.lr)
+experiment_name += '_nepoch=%d_lr=%e_wd=%e' % (args.nepoch, args.lr, args.weight_decay)
 experiment_name += '_lam=%e_seed=%d_hidden=%d_networklag=%d' % (args.lam, args.seed, args.hidden, args.network_lag)
 experiment_name += '_p=%d_T=%d_FC=%e_sd=%e.out' % (args.p, args.T, args.FC, args.sd)
 
@@ -64,7 +65,7 @@ X_train, Y_train, _, _ = format_ts_data(X, args.network_lag, validation = 0.0)
 # Get model
 if args.seed != 0:
 	torch.manual_seed(args.seed)
-model = ParallelMLPEncoding(Y_train.shape[1], Y_train.shape[1], args.network_lag, [args.hidden], args.lr, 'line', args.lam, 'hierarchical', nonlinearity = 'sigmoid')
+model = ParallelMLPEncoding(Y_train.shape[1], Y_train.shape[1], args.network_lag, [args.hidden], args.lr, 'line', args.lam, 'hierarchical', nonlinearity = 'sigmoid', weight_decay = args.weight_decay)
 
 # Run experiment
 train_loss, train_objective, weights, pred = run_experiment(model, X_train, Y_train, args.nepoch, predictions = True, loss_check = args.loss_check)
@@ -76,7 +77,8 @@ experiment_params = {
 	'lam': args.lam,
 	'seed': args.seed,
 	'hidden': args.hidden,
-	'network_lag': args.network_lag
+	'network_lag': args.network_lag,
+	'weight_decay': args.weight_decay
 }
 
 data_params = {
