@@ -29,6 +29,7 @@ parser.add_argument('--nepoch', type = int, default = 1000, help = 'number of tr
 parser.add_argument('--lr', type = float, default = 0.001, help = 'learning rate')
 parser.add_argument('--weight_decay', type = float, default = 0.001, help = 'weight decay on outgoing weights')
 
+parser.add_argument('--data_seed', type = int, default = None, help = 'seed for data generation')
 parser.add_argument('--FC', type = float, default = 8.0, help = 'forcing constant')
 parser.add_argument('--sd', type = float, default = 2.5, help = 'standard deviation of noise')
 parser.add_argument('--dt', type = float, default = 0.1, help = 'sampling rate')
@@ -46,7 +47,7 @@ results_dir = 'Results/' + experiment_base
 experiment_name = results_dir + '/expt'
 experiment_name += '_nepoch=%d_lr=%e_wd=%e' % (args.nepoch, args.lr, args.weight_decay)
 experiment_name += '_lam=%e_seed=%d_hidden=%d_networklag=%d' % (args.lam, args.seed, args.hidden, args.network_lag)
-experiment_name += '_p=%d_T=%d_FC=%e_sd=%e.out' % (args.p, args.T, args.FC, args.sd)
+experiment_name += '_p=%d_T=%d_FC=%e_sd=%e_dseed=%d.out' % (args.p, args.T, args.FC, args.sd, args.data_seed)
 
 # Create directory, if necessary
 if not os.path.exists(results_dir):
@@ -58,7 +59,10 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # Prepare data
-X, GC = lorentz_96_model_2(args.FC, args.p, args.T, sd = args.sd, delta_t = args.dt)
+if args.data_seed is None:
+	X, GC = lorentz_96_model_2(args.FC, args.p, args.T, sd = args.sd, delta_t = args.dt)
+else:
+	X, GC = lorentz_96_model_2(args.FC, args.p, args.T, sd = args.sd, delta_t = args.dt, seed = args.data_seed)
 X = normalize(X)
 X_train, Y_train, _, _ = format_ts_data(X, args.network_lag, validation = 0.0)
 
@@ -87,6 +91,7 @@ data_params = {
 	'FC': args.FC,
 	'sd': args.sd,
 	'dt': args.dt,
+	'data_seed': args.data_seed,
 	'GC_true': GC
 }
 
