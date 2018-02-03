@@ -16,9 +16,9 @@ network_lag_grid = [5]
 nepoch_grid = [30000]
 lr_grid = [0.01]
 
-sparsity_grid = [0.3]
+sparsity_grid = [0.2, 0.3, 0.4]
 sd_grid = [0.1]
-dt_grid = [0.1]
+dt_grid = [0.5, 0.25, 0.1, 0.05]
 p_grid = [20]
 T_grid = [500, 750, 1000]
 
