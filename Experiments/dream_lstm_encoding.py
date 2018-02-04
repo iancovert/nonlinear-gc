@@ -26,6 +26,7 @@ parser.add_argument('--hidden', type = int, default = 10, help = 'hidden units')
 
 parser.add_argument('--nepoch', type = int, default = 1000, help = 'number of training epochs')
 parser.add_argument('--lr', type = float, default = 0.001, help = 'learning rate')
+parser.add_argument('--weight_decay', type = float, default = 0.01, help = 'weight decay on outgoing weights')
 
 parser.add_argument('--size', type = int, default = 50, help = 'size of Dream network')
 parser.add_argument('--type', type = str, default = 'Ecoli', help = 'Dream network type')
@@ -40,7 +41,7 @@ experiment_base = 'DREAM LSTM Encoding'
 results_dir = 'Results/' + experiment_base
 
 experiment_name = results_dir + '/expt'
-experiment_name += '_nepoch=%d_lr=%e' % (args.nepoch, args.lr)
+experiment_name += '_nepoch=%d_lr=%e_wd=%e' % (args.nepoch, args.lr, args.weight_decay)
 experiment_name += '_lam=%e_seed=%d_hidden=%d' % (args.lam, args.seed, args.hidden)
 experiment_name += '_size=%d_type=%s_number=%d.out' % (args.size, args.type, args.number)
 
@@ -62,7 +63,7 @@ X_train = X[:-1, :]
 # Get model
 if args.seed != 0:
 	torch.manual_seed(args.seed)
-model = ParallelLSTMEncoding(Y_train.shape[2], Y_train.shape[2], args.hidden, 1, args.lr, 'line', args.lam)
+model = ParallelLSTMEncoding(Y_train.shape[2], Y_train.shape[2], args.hidden, 1, args.lr, 'line', args.lam, weight_decay = args.weight_decay)
 
 # Run experiment
 train_loss, train_objective, weights, pred = run_recurrent_experiment(model, X_train, Y_train, 
@@ -72,6 +73,7 @@ train_loss, train_objective, weights, pred = run_recurrent_experiment(model, X_t
 experiment_params = {
 	'nepoch': args.nepoch,
 	'lr': args.lr,
+	'weight_decay': args.weight_decay,
 	'lam': args.lam,
 	'seed': args.seed,
 	'hidden': args.hidden
@@ -85,7 +87,7 @@ data_params = {
 }
 
 best_results = {
-	'predictions_train': pred,
+	'train_objective': train_objective,
 	'GC_est': [np.linalg.norm(w, axis = 0) for w in weights]
 }
 
