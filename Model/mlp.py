@@ -76,9 +76,10 @@ class ParallelMLPEncoding:
 
 	def _ridge(self, p = None):
 		if p is None:
-			return [self.weight_decay * torch.sum(list(net.parameters())[2]**2) for net in self.sequentials] 
+			return [self._ridge(target) for target in range(self.p)] 
 		else:
-			return self.weight_decay * torch.sum(list(self.sequentials[p].parameters())[2]**2)
+			params = list(self.sequentials[p].parameters())
+			return self.weight_decay * sum([torch.sum(params[i]**2) for i in range(2, len(params), 2)])
 
 	def _train_prox_line(self, X, Y):
 		# Compute loss and objective
@@ -104,32 +105,35 @@ class ParallelMLPEncoding:
 		X_var = Variable(torch.from_numpy(X).float())
 		Y_var = [Variable(torch.from_numpy(Y[:, target][:, np.newaxis]).float()) for target in range(self.p)]
 
+		# Copy of single network, used for testing new param values
 		new_net = self.sequential_copy
+		new_net_params = list(new_net.parameters())
 
 		for target, net in enumerate(self.sequentials):
-			# Set up initial parameter values
+			# Set up initial learning rate, objective function value to beat
 			lr = self.lr[target]
 			original_objective = loss[target] + ridge[target] + penalty[target]
+			original_net_params = list(net.parameters())
 
 			while lr > min_lr:
 				# Take gradient step in new params
-				for params, o_params in zip(new_net.parameters(), net.parameters()):
+				for params, o_params in zip(new_net_params, original_net_params):
 					params.data = o_params.data - o_params.grad.data * lr
 				
 				# Apply proximal operator to new params
-				prox_operator(list(new_net.parameters())[0], self.penalty, self.n, lr, self.lam, lag = self.lag)
+				prox_operator(new_net_params[0], self.penalty, self.n, lr, self.lam, lag = self.lag)
 				
-				# Compute objective using new params
+				# Compute objective funtion using new params
 				Y_pred = new_net(X_var)
 				new_objective = self.loss_fn(Y_pred, Y_var[target])
-				new_objective += self.lam * apply_penalty(list(new_net.parameters())[0], self.penalty, self.n, lag = self.lag)
-				new_objective += self.weight_decay * torch.sum(list(new_net.parameters())[2]**2)
+				new_objective += self.weight_decay * sum([torch.sum(new_net_params[i]**2) for i in range(2, len(new_net_params), 2)])
+				new_objective += self.lam * apply_penalty(new_net_params[0], self.penalty, self.n, lag = self.lag)
 				
-				diff_squared = sum([torch.sum((o_params.data - params.data)**2) for (params, o_params) in zip(new_net.parameters(), net.parameters())])
+				diff_squared = sum([torch.sum((o_params.data - params.data)**2) for (params, o_params) in zip(new_net_params, original_net_params)])
 				
 				if (new_objective < original_objective - t * lr * diff_squared).data[0]:
 					# Replace parameter values
-					for params, o_params in zip(new_net.parameters(), net.parameters()):
+					for params, o_params in zip(new_net_params, original_net_params):
 						o_params.data = params.data
 					
 					return_value = True
@@ -141,17 +145,14 @@ class ParallelMLPEncoding:
 
 			# Update initial learning rate for next training iteration
 			self.lr[target] = np.sqrt(self.lr[target] * lr)
-
+		
 		return return_value
 
 	def _train_prox(self, X, Y):
 		# Compute total loss
 		loss = self._loss(X, Y)
-		if self.weight_decay > 0.0:
-			ridge = self._ridge()
-			total_loss = sum(loss) + sum(ridge)
-		else:
-			total_loss = sum(loss)
+		ridge = self._ridge()
+		total_loss = sum(loss) + sum(ridge)
 
 		# Run optimizer
 		[net.zero_grad() for net in self.sequentials]
