@@ -10,7 +10,7 @@ import sys
 
 # Data modules
 from Data.mocap_process import load_data_64
-from Data.data_processing import  normalize_list, YX_list,reshape_list
+from Data.data_processing import normalize_list, YX_list, reshape_list
 
 # Model modules
 sys.path.append('../Model')
