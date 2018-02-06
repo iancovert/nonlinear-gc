@@ -23,11 +23,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--lam', type = float, default = 0.1, help = 'lambda for weight decay')
 parser.add_argument('--seed', type = int, default = 12345, help = 'seed')
 parser.add_argument('--hidden', type = int, default = 10, help = 'hidden units')
-parser.add_argument('--network_lag', type = int, default = 2, help = 'lag considered by MLP')
+parser.add_argument('--network_lag', type = int, default = 5, help = 'lag considered by MLP')
 
 parser.add_argument('--nepoch', type = int, default = 1000, help = 'number of training epochs')
 parser.add_argument('--lr', type = float, default = 0.001, help = 'learning rate')
-parser.add_argument('--weight_decay', type = float, default = 0.001, help = 'weight decay on outgoing weights')
+parser.add_argument('--weight_decay', type = float, default = 0.01, help = 'weight decay on outgoing weights')
 
 parser.add_argument('--data_seed', type = int, default = None, help = 'seed for data generation')
 parser.add_argument('--FC', type = float, default = 8.0, help = 'forcing constant')
