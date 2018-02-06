@@ -1,6 +1,6 @@
 import numpy as np 
 import scipy.io as spio
-from data_processing import YX_list, reshape_list
+from Data.data_processing import YX_list, reshape_list
 
 def load_data_12():
     TD = np.loadtxt('mocap124dataset/data_per_seq/01_01.dat')
