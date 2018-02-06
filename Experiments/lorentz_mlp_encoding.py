@@ -36,7 +36,7 @@ parser.add_argument('--dt', type = float, default = 0.1, help = 'sampling rate')
 parser.add_argument('--p', type = int, default = 10, help = 'dimensionality of time series')
 parser.add_argument('--T', type = int, default = 1000, help = 'length of time series')
 
-parser.add_argument('--loss_check', type = int, default = 10, help = 'interval for checking loss')
+parser.add_argument('--loss_check', type = int, default = 100, help = 'interval for checking loss')
 
 args = parser.parse_args()
 
