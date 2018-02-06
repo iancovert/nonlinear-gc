@@ -11,7 +11,7 @@ jobfile = 'Batches/%s.job' % jobname
 lam_grid = np.append(np.geomspace(1.0, 0.01, num = 50), 0)
 seed_grid = [0]
 hidden_grid = [10]
-network_lag_grid = [2]
+network_lag_grid = [5]
 
 nepoch_grid = [30000]
 lr_grid = [0.01]

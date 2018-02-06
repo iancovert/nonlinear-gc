@@ -25,14 +25,13 @@ data_seed_grid = [0, 1, 2, 3, 4]
 
 BASECMD = 'python lorentz_lstm_encoding.py'
 
-param_grid = product(p_grid, T_grid, data_seed_grid,
-	lam_grid, seed_grid, hidden_grid,
-	nepoch_grid, lr_grid,
-	FC_grid, sd_grid, dt_grid)
+param_grid = product(lam_grid, seed_grid, hidden_grid,
+	nepoch_grid, lr_grid, wd_grid,
+	FC_grid, sd_grid, dt_grid, p_grid, T_grid, data_seed_grid)
 
 with open(jobfile, 'w') as f:
 	for param in param_grid:
-		p, T, data_seed, lam, seed, hidden, nepoch, lr, FC, sd, dt = param
+		lam, seed, hidden, nepoch, lr, wd, FC, sd, dt, p, T, data_seed = param
 
 		argstr = BASECMD
 
@@ -50,5 +49,4 @@ with open(jobfile, 'w') as f:
 		argstr += ' --T=%d' % T
 		argstr += ' --data_seed=%d' % data_seed
 
-		#f.write(argstr + '\n')
-		print(argstr)
+		f.write(argstr + '\n')
