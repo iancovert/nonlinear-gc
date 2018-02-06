@@ -14,7 +14,7 @@ hidden_grid = [10, 20, 40]
 network_lag_grid = [2]
 
 nepoch_grid = [20000]
-lr_grid = [0.001]
+lr_grid = [0.01]
 
 size_grid = [100]
 type_grid = ['Ecoli', 'Yeast']
