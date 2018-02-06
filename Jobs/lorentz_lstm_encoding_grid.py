@@ -50,5 +50,4 @@ with open(jobfile, 'w') as f:
 		argstr += ' --T=%d' % T
 		argstr += ' --data_seed=%d' % data_seed
 
-		#f.write(argstr + '\n')
-		print(argstr)
+		f.write(argstr + '\n')

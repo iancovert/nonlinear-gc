@@ -33,7 +33,7 @@ parser.add_argument('--sd', type = float, default = 2.5, help = 'standard deviat
 parser.add_argument('--dt', type = float, default = 0.1, help = 'sampling rate')
 parser.add_argument('--p', type = int, default = 10, help = 'dimensionality of time series')
 parser.add_argument('--T', type = int, default = 1000, help = 'length of time series')
-parser.add_argumnet('--data_seed', type = int, default = None, help = 'seed for generating data')
+parser.add_argument('--data_seed', type = int, default = None, help = 'seed for generating data')
 
 parser.add_argument('--loss_check', type = int, default = 10, help = 'interval for checking loss')
 
