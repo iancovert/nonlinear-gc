@@ -8,19 +8,19 @@ tstamp = time.strftime('%H%M%S')
 jobname = 'lorentz_lstm_encoding_%s_%s' % (dstamp, tstamp)
 jobfile = 'Batches/%s.job' % jobname
 
-lam_grid = np.append(np.geomspace(1.0, 0.01, num = 50), 0)
+lam_grid = np.append(np.geomspace(1.0, 0.001, num = 50), 0)
 seed_grid = [0]
 hidden_grid = [10]
 
-nepoch_grid = [15000]
+nepoch_grid = [10000]
 lr_grid = [0.01]
 wd_grid = [0.01]
 
 FC_grid = [10, 40]
 sd_grid = [2.0]
 dt_grid = [0.05]
-p_grid = [10, 20, 30]
-T_grid = [500, 750, 1000]
+p_grid = [30]
+T_grid = [500, 1000]
 data_seed_grid = [0, 1, 2, 3, 4]
 
 BASECMD = 'python lorentz_lstm_encoding.py'
