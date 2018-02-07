@@ -24,12 +24,13 @@ parser.add_argument('--lam', type = float, default = 0.1, help = 'lambda for wei
 parser.add_argument('--seed', type = int, default = 12345, help = 'seed')
 parser.add_argument('--hidden', type = int, default = 10, help = 'hidden units')
 parser.add_argument('--network_lag', type = int, default = 5, help = 'lag considered by MLP')
+parser.add_argument('--penalty', type = str, default = 'hierarchical', help = 'penalty type')
 
 parser.add_argument('--nepoch', type = int, default = 1000, help = 'number of training epochs')
 parser.add_argument('--lr', type = float, default = 0.001, help = 'learning rate')
 parser.add_argument('--weight_decay', type = float, default = 0.01, help = 'weight decay on outgoing weights')
 
-parser.add_argument('--data_seed', type = int, default = None, help = 'seed for data generation')
+parser.add_argument('--data_seed', type = int, default = -1, help = 'seed for data generation')
 parser.add_argument('--FC', type = float, default = 8.0, help = 'forcing constant')
 parser.add_argument('--sd', type = float, default = 2.5, help = 'standard deviation of noise')
 parser.add_argument('--dt', type = float, default = 0.1, help = 'sampling rate')
@@ -46,7 +47,7 @@ results_dir = 'Results/' + experiment_base
 
 experiment_name = results_dir + '/expt'
 experiment_name += '_nepoch=%d_lr=%e_wd=%e' % (args.nepoch, args.lr, args.weight_decay)
-experiment_name += '_lam=%e_seed=%d_hidden=%d_networklag=%d' % (args.lam, args.seed, args.hidden, args.network_lag)
+experiment_name += '_lam=%e_seed=%d_hidden=%d_networklag=%d_penalty=%s' % (args.lam, args.seed, args.hidden, args.network_lag, args.penalty)
 experiment_name += '_p=%d_T=%d_FC=%e_sd=%e_dseed=%d.out' % (args.p, args.T, args.FC, args.sd, args.data_seed)
 
 # Create directory, if necessary
@@ -59,7 +60,7 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # Prepare data
-if args.data_seed is None:
+if args.data_seed == -1:
 	X, GC = lorentz_96_model_2(args.FC, args.p, args.T, sd = args.sd, delta_t = args.dt)
 else:
 	X, GC = lorentz_96_model_2(args.FC, args.p, args.T, sd = args.sd, delta_t = args.dt, seed = args.data_seed)
@@ -69,7 +70,7 @@ X_train, Y_train, _, _ = format_ts_data(X, args.network_lag, validation = 0.0)
 # Get model
 if args.seed != 0:
 	torch.manual_seed(args.seed)
-model = ParallelMLPEncoding(Y_train.shape[1], Y_train.shape[1], args.network_lag, [args.hidden], args.lr, 'line', args.lam, 'hierarchical', nonlinearity = 'sigmoid', weight_decay = args.weight_decay)
+model = ParallelMLPEncoding(Y_train.shape[1], Y_train.shape[1], args.network_lag, [args.hidden], args.lr, 'line', args.lam, args.penalty, nonlinearity = 'sigmoid', weight_decay = args.weight_decay)
 
 # Run experiment
 train_loss, train_objective, weights, pred = run_experiment(model, X_train, Y_train, args.nepoch, predictions = True, loss_check = args.loss_check)
@@ -82,7 +83,8 @@ experiment_params = {
 	'seed': args.seed,
 	'hidden': args.hidden,
 	'network_lag': args.network_lag,
-	'weight_decay': args.weight_decay
+	'weight_decay': args.weight_decay,
+	'penalty': args.penalty
 }
 
 data_params = {
