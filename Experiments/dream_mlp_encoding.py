@@ -85,7 +85,7 @@ data_params = {
 }
 
 best_results = {
-	'predictions_train': pred,
+	'train_objective': train_objective,
 	'GC_est': [np.linalg.norm(np.reshape(w, newshape = (args.hidden * args.network_lag, args.size), order = 'F'), axis = 0) for w in weights]
 }
 
