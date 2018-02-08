@@ -26,11 +26,14 @@ parser.add_argument('--hidden', type = int, default = 10, help = 'hidden units')
 
 parser.add_argument('--nepoch', type = int, default = 1000, help = 'number of training epochs')
 parser.add_argument('--lr', type = float, default = 0.01, help = 'learning rate')
+parser.add_argument('--weight_decay', type = float, default = 0.01, help = 'weight decay on outgoing weights')
 
+parser.add_argument('--data_seed', type = int, default = -1, help = 'seed for data generation')
 parser.add_argument('--sparsity', type = float, default = 0.2, help = 'sparsity of time series')
 parser.add_argument('--p', type = int, default = 10, help = 'dimensionality of time series')
 parser.add_argument('--T', type = int, default = 1000, help = 'length of time series')
 parser.add_argument('--lag', type = int, default = 1, help = 'lag in VAR model')
+parser.add_argument('--sd', type = float, default = 2.0, help = 'standard deviation of noise')
 
 parser.add_argument('--loss_check', type = int, default = 10, help = 'interval for checking loss')
 
@@ -41,9 +44,9 @@ experiment_base = 'Standardized VAR LSTM Encoding'
 results_dir = 'Results/' + experiment_base
 
 experiment_name = results_dir + '/expt'
-experiment_name += '_nepoch=%d_lr=%e' % (args.nepoch, args.lr)
+experiment_name += '_nepoch=%d_lr=%e_wd=%e' % (args.nepoch, args.lr, args.weight_decay)
 experiment_name += '_lam=%e_seed=%d_hidden=%d' % (args.lam, args.seed, args.hidden)
-experiment_name += '_spars=%e_p=%d_T=%d_lag=%d.out' % (args.sparsity, args.p, args.T, args.lag)
+experiment_name += '_spars=%e_p=%d_T=%d_lag=%d_dseed=%d_sd=%e.out' % (args.sparsity, args.p, args.T, args.lag, args.data_seed, args.sd)
 
 # Create directory, if necessary
 if not os.path.exists(results_dir):
@@ -55,7 +58,10 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # Prepare data
-X, _, GC = standardized_var_model(args.sparsity, args.p, 5, 1.0, args.T, args.lag)
+if args.data_seed == -1:
+	X, _, GC = standardized_var_model(args.sparsity, args.p, 5, args.sd, args.T, args.lag)
+else:
+	X, _, GC = standardized_var_model(args.sparsity, args.p, 5, args.sd, args.T, args.lag, seed = args.data_seed)
 X = normalize(X)
 Y_train = X[1:, :]
 Y_train = tensorize_sequence(Y_train, window = 50, stride = 10)
@@ -65,7 +71,7 @@ X_train = tensorize_sequence(X_train, window = 50, stride = 10)
 # Get model
 if args.seed != 0:
 	torch.manual_seed(args.seed)
-model = ParallelLSTMEncoding(Y_train.shape[-1], Y_train.shape[-1], args.hidden, 1, args.lr, 'line', args.lam)
+model = ParallelLSTMEncoding(Y_train.shape[-1], Y_train.shape[-1], args.hidden, 1, args.lr, 'line', args.lam, weight_decay = args.weight_decay)
 
 # Run experiment
 train_loss, train_objective, weights, pred = run_recurrent_experiment(model, X_train, Y_train, 
@@ -77,7 +83,8 @@ experiment_params = {
 	'lr': args.lr,
 	'lam': args.lam,
 	'seed': args.seed,
-	'hidden': args.hidden
+	'hidden': args.hidden,
+	'weight_decay': args.weight_decay
 }
 
 data_params = {
@@ -85,11 +92,13 @@ data_params = {
 	'p': args.p,
 	'T': args.T,
 	'lag': args.lag,
+	'data_seed': args.data_seed,
+	'sd': args.sd,
 	'GC_true': GC
 }
 
 best_results = {
-	'predictions_train': pred,
+	'train_objective': train_objective,
 	'GC_est': [np.linalg.norm(w, axis = 0) for w in weights]
 }
 
