@@ -71,18 +71,18 @@ def compute_AUC(GC_true, GC_list, thresh, self_con = True, rectify = False):
 		TP = np.sum((thresh_list[i] == 1) * (GC_true == 1))
 		TP_rate[i] = TP/P
 	
-	FP_rate = np.array([0] + list(FP_rate) + [1])
-	TP_rate = np.array([0] + list(TP_rate) + [1])
+	FP_rate = np.array([1] + list(FP_rate) + [0])
+	TP_rate = np.array([1] + list(TP_rate) + [0])
 
 	if rectify:
 		FP_rate, TP_rate = rectify_roc(FP_rate, TP_rate)
 
-	else:
-		inds = np.argsort(FP_rate)
-		FP_rate = FP_rate[inds]
-		TP_rate = TP_rate[inds]
+	# else:
+	# 	inds = np.argsort(FP_rate)
+	# 	FP_rate = FP_rate[inds]
+	# 	TP_rate = TP_rate[inds]
 
-	return TP_rate, FP_rate, np.trapz(TP_rate,FP_rate)
+	return TP_rate, FP_rate, np.trapz(TP_rate[::-1],FP_rate[::-1])
 
 def compute_AUPR(GC_true, GC_list, thresh, self_con = True, rectify = False):
 	m = len(GC_list)
@@ -115,16 +115,16 @@ def compute_AUPR(GC_true, GC_list, thresh, self_con = True, rectify = False):
 		RE_rate[i] = TP / P
 
 	PR_rate = np.array([0] + list(PR_rate) + [1])
-	RE_rate = np.array([0] + list(RE_rate) + [1])
+	RE_rate = np.array([1] + list(RE_rate) + [0])
 
 	if rectify:
 		RE_rate, PR_rate = rectify_roc(RE_rate, PR_rate)
 		RE_rate = RE_rate
 		PR_rate = PR_rate
 
-	else:
-		inds = np.argsort(RE_rate)
-		RE_rate = RE_rate[inds]
-		PR_rate = PR_rate[inds]
+	# else:
+	# 	inds = np.argsort(RE_rate)
+	# 	RE_rate = RE_rate[inds]
+	# 	PR_rate = PR_rate[inds]
 
-	return PR_rate, RE_rate, np.trapz(PR_rate,RE_rate)
+	return PR_rate, RE_rate, np.trapz(PR_rate[::-1],RE_rate[::-1])
