@@ -4,26 +4,33 @@ import numpy as np
 
 def apply_penalty(W, penalty, num_inputs, lag = 1):
 	if penalty == 'group_lasso':
-		loss_list = [torch.norm(W[:, (i * lag):((i + 1) * lag)], p = 2) for i in range(num_inputs)]
+		group_loss = [torch.norm(W[:, (i * lag):((i + 1) * lag)], p = 2) for i in range(num_inputs)]
+		total = sum(group_loss)
 	elif penalty == 'hierarchical':
-		loss_list = [torch.norm(W[:, (i * lag):((i + 1) * lag - j)], p = 2) for i in range(num_inputs) for j in range(lag)]
+		hierarchical_loss = [torch.norm(W[:, (i * lag):((i + 1) * lag - j)], p = 2) for i in range(num_inputs) for j in range(lag)]
+		total = sum(hierarchical_loss)
+	elif penalty == 'stacked':
+		column_loss = [torch.norm(W[:, i], p = 2) for i in range(lag * num_inputs)]
+		group_loss = [torch.norm(W[:, (i * lag):((i + 1) * lag)], p = 2) for i in range(num_inputs)]
+		total = sum(column_loss) + sum(group_loss)
 	else:
 		raise ValueError('penalty must be group_lasso or hierarchical')
 
-	return sum(loss_list)
+	return total
 
 def prox_operator(W, penalty, num_inputs, lr, lam, lag = 1):
 	if penalty == 'group_lasso':
 		_prox_group_lasso(W, num_inputs, lag, lr, lam)
-		# _prox_group_lasso_inplace(W, num_inputs, lag, lr, lam)
 	elif penalty == 'hierarchical':
 		_prox_hierarchical(W, num_inputs, lag, lr, lam)
+	elif penalty == 'stacked':
+		_prox_stacked(W, num_inputs, lag, lr, lam)
 	else:
-		raise ValueError('penalty must be group_lasso or hierarchical')
+		raise ValueError('unsupported penalty')
 
 def _prox_group_lasso(W, num_inputs, lag, lr, lam):
 	'''
-		Apply prox operator directly (not through prox of conjugate)
+		Apply prox operator
 	'''
 	C = W.data.clone().numpy()
 
@@ -36,7 +43,7 @@ def _prox_group_lasso(W, num_inputs, lag, lr, lam):
 
 def _prox_hierarchical(W, num_inputs, lag, lr, lam):
 	''' 
-		Apply prox operator for each penalty
+		Apply prox operator
 	'''
 	C = W.data.clone().numpy()
 
@@ -47,6 +54,24 @@ def _prox_hierarchical(W, num_inputs, lag, lr, lam):
 		temp = C[range(end), :]
 		C[range(end), :] = _prox_update(temp, lam, lr)
 
+	C = np.reshape(C, newshape = (h, l), order = 'F')
+
+	W.data = torch.from_numpy(C)
+
+def _prox_stacked(W, num_inputs, lag, lr, lam):
+	'''
+		Apply prox operator
+	'''
+	C = W.data.clone().numpy()
+
+	h, l = C.shape
+	C = np.reshape(C, newshape = (lag * h, num_inputs), order = 'F')
+	for i in range(lag):
+		start = i * h
+		end = (i + 1) * h
+		temp = C[range(start, end), :]
+		C[range(start, end), :] = _prox_update(temp, lam, lr)
+	C = _prox_update(C, lam, lr)
 	C = np.reshape(C, newshape = (h, l), order = 'F')
 
 	W.data = torch.from_numpy(C)
@@ -65,28 +90,3 @@ def _prox_update(W, lam, lr):
 	W[:, norm_value_gt] = W[:, norm_value_gt] * (1 - np.divide(lam * lr, norm_value[norm_value_gt][np.newaxis, :]))
 
 	return W
-
-# def _prox_group_lasso_inplace(W, num_inputs, lag, lr, lam):
-# 	# TODO PyTorch complains that this does an in place edit of a Variable that requires gradient
-# 	for i in range(num_inputs):
-# 		norm = W[:, (lag * i):(lag * (i + 1))].norm()
-# 		if norm.data.numpy()[0] <= lr * lag:
-# 			W[:, (lag * i):(lag * (i + 1))] = 0.0
-# 		else:
-# 			W[:, (lag * i):(lag * (i + 1))] = W[:, (lag * i):(lag * (i + 1))] * (1 - lr * lam / norm)
-
-# Slower, secondary implementation of hierarchical update
-# def hierarchical_update(W, num_inputs, lag, lr, lam):
-# 	C = W.data.clone().numpy()
-
-# 	for i in range(num_inputs):
-# 		start = i * lag
-# 		for j in range(1, lag + 1):
-# 			norm = np.linalg.norm(C[:, range(start, start + j)], order = 2)
-# 			if norm < lam * lr:
-# 				C[:, range(start, start + j)] = 0.0
-# 			else:
-# 				C[:, range(start, start + j)] = C[:, range(start, start + j)] * (1 - lam * lr / norm)
-
-# 	W.data = torch.from_numpy(C)
-
