@@ -55,7 +55,7 @@ if os.path.isfile(experiment_name):
 	sys.exit(0)
 
 # Prepare data
-X, _, GC = standardized_var_model(args.sparsity, args.p, 5, 1.0, args.T, args.lag)
+X, _, GC = standardized_var_model(args.sparsity, args.p, 5, 2.5, args.T, args.lag)
 X = normalize(X)
 Y_train = X[1:, :]
 Y_train = tensorize_sequence(Y_train, window = 50, stride = 10)
