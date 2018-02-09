@@ -9,6 +9,7 @@ import numpy as np
 parser = argparse.ArgumentParser()
 parser.add_argument('--dir', type=str, default=None, help='directory containing results to process')
 parser.add_argument('--outname', type=str, default=None,help='(optional) name for output file')
+parser.add_argument('--weights', type=str, default='N',help='(optional) include weights, if saved')
 args = parser.parse_args()
 
 resdir = args.dir
@@ -37,6 +38,8 @@ for rf in res_files:
 	consolidated = {**results['best_results'], **results['experiment_params'], **results['data_params']}
 	if 'model' in consolidated.keys():
 		del consolidated['model']
+	if 'weights' in consolidated.keys() and args.weights.lower == 'n':
+		del consolidates['weights']
 	all_par_dict_list.append(consolidated)
 
 experiment_df = pd.DataFrame(all_par_dict_list)
