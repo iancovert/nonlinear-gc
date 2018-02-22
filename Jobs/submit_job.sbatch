@@ -18,13 +18,8 @@
 #
 
 # set up python
-echo Hello shell script
 module load Python/3.5.2-foss-2016b
 source ${HOME}/pt-env/bin/activate
-echo Getting command
 command=$(sed -n ${SLURM_ARRAY_TASK_ID}p $jobfile)
-echo Got command
 cd ${HOME}/nonlinear-gc/Experiments
-echo ${command}
-echo $(pwd)
 ${command}
