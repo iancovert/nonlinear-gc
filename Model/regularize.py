@@ -14,7 +14,7 @@ def apply_penalty(W, penalty, num_inputs, lag = 1):
 		group_loss = [torch.norm(W[:, (i * lag):((i + 1) * lag)], p = 2) for i in range(num_inputs)]
 		total = sum(column_loss) + sum(group_loss)
 	else:
-		raise ValueError('penalty must be group_lasso or hierarchical')
+		raise ValueError('unsupported penalty')
 
 	return total
 
