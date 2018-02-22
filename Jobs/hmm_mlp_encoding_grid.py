@@ -17,7 +17,7 @@ nepoch_grid = [20000]
 
 sparsity_grid = [0.2]
 p_grid = [20]
-T_grid = [2000]
+T_grid = [500]
 states_grid = [5]
 
 BASECMD = 'python hmm_mlp_encoding.py'

@@ -21,7 +21,7 @@ penalty_grid = ['group_lasso', 'hierarchical', 'stacked']
 sparsity_grid = [0.3]
 p_grid = [20]
 T_grid = [750]
-lag_grid = [3]
+lag_grid = [2]
 data_seed_grid = [0, 1, 2, 3, 4]
 
 BASECMD = 'python standardized_var_mlp_encoding.py'

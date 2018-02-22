@@ -8,12 +8,12 @@ tstamp = time.strftime('%H%M%S')
 jobname = 'dream_mlp_encoding_%s_%s' % (dstamp, tstamp)
 jobfile = 'Batches/%s.job' % jobname
 
-lam_grid = np.append(np.geomspace(10.0, 0.001, num = 50), 0)
+lam_grid = np.append(np.geomspace(1.0, 0.001, num = 50), 0)
 seed_grid = [0]
-hidden_grid = [10, 20, 40]
+hidden_grid = [5]
 network_lag_grid = [2]
 
-nepoch_grid = [20000]
+nepoch_grid = [30000]
 lr_grid = [0.01]
 
 size_grid = [100]

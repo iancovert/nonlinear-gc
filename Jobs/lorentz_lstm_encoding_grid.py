@@ -16,7 +16,7 @@ nepoch_grid = [10000]
 lr_grid = [0.01]
 wd_grid = [0.01]
 
-FC_grid = [10, 40]
+FC_grid = [10]
 sd_grid = [2.0]
 dt_grid = [0.05]
 p_grid = [30]
