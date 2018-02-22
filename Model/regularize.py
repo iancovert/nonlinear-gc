@@ -80,7 +80,6 @@ def _prox_update(W, lam, lr):
 	'''
 		Apply prox operator to a matrix, where columns each have group lasso penalty
 	'''
-
 	W = W.copy()
 
 	norm_value = np.linalg.norm(W, axis = 0, ord = 2)
