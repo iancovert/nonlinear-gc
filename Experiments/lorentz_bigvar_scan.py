@@ -10,7 +10,7 @@ import sys
 from itertools import product
 
 # Data modules
-from Data.generate_synthetic import kuramoto_model
+from Data.generate_synthetic import lorentz_96_model_2
 from Data.data_processing import format_ts_data, normalize
 
 # Model modules
@@ -19,20 +19,22 @@ from bigvar import run_bigvar
 
 # Parse command line arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('--nlambdas', type=int, default=50, help='number of lambda values in grid')
-parser.add_argument('--lamratio', type=float, default=1000., help='ratio of largest lambda in grid to smallest')
+parser.add_argument('--nlambdas', type=int, default=50,
+                    help='number of lambda values in grid')
+parser.add_argument('--lamratio', type=float, default=1000.,
+                    help='ratio of largest lambda in grid to smallest')
 parser.add_argument('--seed', type=int, default=12345, help='seed')
-parser.add_argument('--model_lag', type=int, default=5, help='lag of BigVAR model')
+parser.add_argument('--model_lag', type=int, default=5,
+                    help='lag of BigVAR model')
 
-parser.add_argument('--sparsity', type = float, default = 0.3, help = 'sparsity of connections')
-parser.add_argument('--sd', type = float, default = 0.1, help = 'standard deviation of noise')
-parser.add_argument('--dt', type = float, default = 0.1, help = 'sampling rate')
-parser.add_argument('--p', type = int, default = 20, help = 'dimensionality of time series')
-parser.add_argument('--T', type = int, default = 1000, help = 'length of time series')
+parser.add_argument('--p', type=int, default=20,
+                    help='dimensionality of time series')
+parser.add_argument('--T', type=int, default=500,
+                    help='length of time series')
 args = parser.parse_args()
 
 # Prepare filename
-experiment_base = 'Oscillator_BigVAR'
+experiment_base = 'Lorentz BigVAR'
 results_dir = 'Results/' + experiment_base
 
 experiment_name = results_dir + '/scan_expt.out'
@@ -41,28 +43,23 @@ experiment_name = results_dir + '/scan_expt.out'
 if not os.path.exists(results_dir):
      os.makedirs(results_dir)
 
-# Verify that experiment doesn't exist
-if os.path.isfile(experiment_name):
-	print('Skipping experiment')
-	sys.exit(0)
-
 # Parameters to scan
+sd_grid = [2.0]
+FC_grid = [10, 40]
 T_grid = [500, 750, 1000]
-sparsity_grid = [0.2, 0.3, 0.4]
-dt_grid = [0.05, 0.1, 0.25, 0.5]
 
 results_list = []
 
-for T, sparsity, dt in product(T_grid, sparsity_grid, dt_grid):
+for sd, FC, T in product(sd_grid, FC_grid, T_grid):
 
   # generate and prepare data
-  X, GC = kuramoto_model(sparsity, args.p, N = T + 1, delta_t = dt, sd = args.sd, num_trials = None)
+  X, GC = lorentz_96_model_2(FC, args.p, T + 1, sd = sd, delta_t = 0.05)
   X = normalize(X)
 
   coefs, lambdas, _ = run_bigvar(X, args.model_lag, 'HVARELEM',
                                  nlambdas=args.nlambdas,
                                  lamratio=float(args.lamratio),
-                                 T1=0, T2=T-2, use_intercept=True)
+                                 T1=0, T2=T-1, use_intercept=True)
 
   # for each lambda, estimate granger causality
   coef_tnsrs = list()
@@ -79,7 +76,8 @@ for T, sparsity, dt in product(T_grid, sparsity_grid, dt_grid):
                        'lamratio': args.lamratio, 'model_lag': args.model_lag,
                        'lambdas': lambdas
                       }
-  data_params = {'T': T, 'sparsity': sparsity, 'dt': dt, 
+  data_params = {'p': args.p, 'T': T,
+                 'sd': sd, 'FC': FC
                 }
 
   best_results = {'GC_est': GC_est, 'GC_true': GC}
@@ -102,4 +100,5 @@ for r in results_list:
 
 # Save results
 with open(experiment_name, 'wb') as f:
-    pickle.dump(results_list, f)
+	pickle.dump(results_list, f)
+

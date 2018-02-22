@@ -12,16 +12,16 @@ lam_grid = np.append(np.geomspace(10.0, 0.001, num = 50), 0)
 seed_grid = [0]
 hidden_grid = [10]
 
-nepoch_grid = [10000]
+nepoch_grid = [15000]
 lr_grid = [0.01]
 wd_grid = [0.01]
 
-sparsity_grid = [0.3]
-p_grid = [30]
+sparsity_grid = [0.2]
+p_grid = [20]
 sd_grid = [2.0]
 T_grid = [500, 1000]
-lag_grid = [3]
-data_seed_grid = [0, 1, 2, 3, 4]
+lag_grid = [2]
+data_seed_grid = [876]
 
 BASECMD = 'python standardized_var_lstm_encoding.py'
 

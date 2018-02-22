@@ -30,7 +30,7 @@ parser.add_argument('--sparsity', type=float, default=0.2,
                     help='sparsity of time series')
 parser.add_argument('--p', type=int, default=20,
                     help='dimensionality of time series')
-parser.add_argument('--T', type=int, default=2000,
+parser.add_argument('--T', type=int, default=500,
                     help='length of time series')
 parser.add_argument('--states', type=int, default=5,
                     help='number of HMM states')
