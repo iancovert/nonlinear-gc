@@ -211,12 +211,6 @@ def long_lag_var_model(sparsity, p, sd_beta, sd_e, N, lag = 20, seed = 765, mixe
 	else:
 		GC_lag[:, range(p)] = np.maximum(GC_on, np.eye(p))
 
-	# if mixed:
-	# 	GC_lag[:, range(0, p)] = np.eye(p)
-	# 	GC_lag[:, range(p * (lag - 1), p * lag)] = GC_on
-	# else:
-	# 	GC_lag[:, range(p * (lag - 1), p * lag)] = np.maximum(GC_on, np.eye(p))
-
 	beta = np.random.normal(loc = 0, scale = sd_beta, size = (p, p * lag))
 	beta[(beta < min_effect) & (beta > 0)] = min_effect
 	beta[(beta > min_effect) & (beta < 0)] = - min_effect
@@ -315,31 +309,3 @@ def hmm_model(p, N, num_states = 3, sd_e = 0.1, sparsity = 0.2, tau = 2, seed = 
 			X[i,j] = sd_e * np.random.randn(1) + mu[j,L[i,j]]
 
 	return X, L, GC_on
-
-if __name__ == "__main__": 
-	import matplotlib.pyplot as plt
-	#z,GC = lorentz_96_model_2(5,10,100,.1,.1)
-	#plt.plot(z[:, 0], 'b', label='theta(t)')
-	#plt.plot(z[:, 1], 'g', label='omega(t)')
-	#plt.show()
-	sparsity = 1
-	p = 2
-
-	z, GC = kuramoto_model(sparsity, p,N=25000,delta_t = .001, sd=.1, seed=23)
-	plt.plot(z[:, 0,0], 'b', label='theta(t)')
-	plt.plot(z[:, 0,1], 'g', label='omega(t)')
-	plt.show()
-
-	#X,L,GC_on = hmm_model(10, 200)
-
-
-	GC_true = np.eye(10)
-	GC_est = np.zeros((3,10,10))
-	GC_est[0,:,:] = np.eye(10) + .05
-	GC_est[1,:,:] = np.eye(10) + .05
-	GC_est[2,:,:] = np.eye(10) + .05
-	thresh = .1
-	tp,fp,auc = compute_AUC(GC_true,GC_est,thresh,self_con=True)
-
-
-
