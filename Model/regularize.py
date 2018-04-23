@@ -32,7 +32,7 @@ def _prox_group_lasso(W, num_inputs, lag, lr, lam):
 	'''
 		Apply prox operator
 	'''
-	C = W.data.clone().numpy()
+	C = W.data.numpy()
 
 	h, l = C.shape
 	C = np.reshape(C, newshape = (lag * h, num_inputs), order = 'F')
@@ -45,7 +45,7 @@ def _prox_hierarchical(W, num_inputs, lag, lr, lam):
 	''' 
 		Apply prox operator
 	'''
-	C = W.data.clone().numpy()
+	C = W.data.numpy()
 
 	h, l = C.shape
 	C = np.reshape(C, newshape = (lag * h, num_inputs), order = 'F')
@@ -62,7 +62,7 @@ def _prox_stacked(W, num_inputs, lag, lr, lam):
 	'''
 		Apply prox operator
 	'''
-	C = W.data.clone().numpy()
+	C = W.data.numpy()
 
 	h, l = C.shape
 	C = np.reshape(C, newshape = (lag * h, num_inputs), order = 'F')
@@ -80,7 +80,6 @@ def _prox_update(W, lam, lr):
 	'''
 		Apply prox operator to a matrix, where columns each have group lasso penalty
 	'''
-	W = W.copy()
 
 	norm_value = np.linalg.norm(W, axis = 0, ord = 2)
 	norm_value_gt = norm_value >= (lam * lr)
